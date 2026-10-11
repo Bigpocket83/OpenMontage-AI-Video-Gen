@@ -53,10 +53,25 @@ motion:
   exit: "cut to a color field"
 
 audio:
-  voice_style: "none"
-  music_mood: "glitchy minimal electronic, clicks, granular"
-  music_volume: 0.6
-  sfx_style: "data blips per tracking box, shutter clicks"
+  voice_style: "optional whispered/clinical VO labels; otherwise SFX-only"
+  music_mood: "none (VO + SFX only, no music)"
+  music_volume: 0
+  sfx_style: "clinical, data-like: blips, shutter clicks, scanner sweeps"
+  sfx_map:
+    tracking_box_pop: "short data blip per box"
+    label_type_on: "tiny teletype ticks"
+    crop_window_pop: "camera shutter click"
+    letter_split_reveal: "soft tearing/air split"
+    color_field_flash: "low hum swell cut short"
+    invert_xray_pass: "scanner sweep"
+    subject_rotation: "faint servo whirr"
+  sfx_rules:
+    - "No music. The voiceover carries rhythm; SFX carry motion."
+    - "Every SFX is semantically matched to what moves or appears (object, material, action), never a generic hit."
+    - "SFX start on the motion's first frame (0 to -1 frame lead); their length matches the move's duration."
+    - "Whooshes follow the move's speed curve: ease-in exit = rising whoosh, ease-out entrance = falling tail."
+    - "Keep SFX under the voice: peaks around -18 to -12 dBFS, never masking a spoken word; duck SFX -6 dB inside speech."
+    - "Use silence: holds between phrases get room tone only, so the next hit lands."
 
 asset_generation:
   image_prompt_prefix: "specimen photography of a single subject on pure black, scientific editorial, high detail, "

@@ -54,10 +54,27 @@ motion:
   exit: "hard cut on beat or a single color-flash frame"
 
 audio:
-  voice_style: "none, or 2-3 word manifesto lines on screen ('Passion. Performance.')"
-  music_mood: "cinematic trap / hybrid trailer, big drops"
-  music_volume: 0.7
-  sfx_style: "risers, impacts on logo hits, engine revs / ambient foley from footage"
+  voice_style: "bold manifesto VO in 2-3 word lines, confident pauses"
+  music_mood: "none (VO + SFX only, no music)"
+  music_volume: 0
+  sfx_style: "big, physical, cinematic: impacts, engines, mechanical foley"
+  sfx_map:
+    scale_slam_type: "heavy impact hit on the landing frame"
+    glitch_scramble: "digital glitch burst, length = scramble"
+    color_flash: "short sub thump"
+    whip_pan: "fast whoosh shaped to the speed ramp"
+    chevron_wipe: "rhythmic mechanical ratchet"
+    packaging_hero: "matte bag crinkle / bottle clink by material"
+    car_footage: "engine rev / tire / door foley from the shot"
+    signage_reveal: "deep reverb boom"
+    final_lockup: "big impact + long tail"
+  sfx_rules:
+    - "No music. The voiceover carries rhythm; SFX carry motion."
+    - "Every SFX is semantically matched to what moves or appears (object, material, action), never a generic hit."
+    - "SFX start on the motion's first frame (0 to -1 frame lead); their length matches the move's duration."
+    - "Whooshes follow the move's speed curve: ease-in exit = rising whoosh, ease-out entrance = falling tail."
+    - "Keep SFX under the voice: peaks around -18 to -12 dBFS, never masking a spoken word; duck SFX -6 dB inside speech."
+    - "Use silence: holds between phrases get room tone only, so the next hit lands."
 
 asset_generation:
   image_prompt_prefix: "premium brand packaging photography, bold signature color, dramatic studio lighting, editorial, "

@@ -54,10 +54,27 @@ motion:
   exit: "slow dissolve or grid slide"
 
 audio:
-  voice_style: "optional calm Arabic VO"
-  music_mood: "ambient oud / qanun textures over soft pads"
-  music_volume: 0.4
-  sfx_style: "soft pen scratches on draw, thread pull on embroidery, gentle chime on lockup"
+  voice_style: "calm, dignified Arabic VO (Gulf/Najdi or MSA), slow pace ~2 words/sec"
+  music_mood: "none (VO + SFX only, no music)"
+  music_volume: 0
+  sfx_style: "refined, tactile, material: pen on paper, thread, stone, glass"
+  sfx_map:
+    geometry_line_draw: "fine pen-on-paper stroke, length = line draw"
+    circle_draw: "compass/drafting stroke"
+    mark_fill: "soft paper swell"
+    embroidery_stitch: "thread pull + needle pierce per stitch"
+    gold_shine: "delicate metallic shimmer"
+    bento_tile_reflow: "soft stone/tile slide, staggered"
+    typewriter_specimen: "quiet key ticks"
+    jewel_reveal: "crystal glint"
+    final_lockup: "warm low resonance"
+  sfx_rules:
+    - "No music. The voiceover carries rhythm; SFX carry motion."
+    - "Every SFX is semantically matched to what moves or appears (object, material, action), never a generic hit."
+    - "SFX start on the motion's first frame (0 to -1 frame lead); their length matches the move's duration."
+    - "Whooshes follow the move's speed curve: ease-in exit = rising whoosh, ease-out entrance = falling tail."
+    - "Keep SFX under the voice: peaks around -18 to -12 dBFS, never masking a spoken word; duck SFX -6 dB inside speech."
+    - "Use silence: holds between phrases get room tone only, so the next hit lands."
 
 asset_generation:
   image_prompt_prefix: "elegant Saudi heritage brand, Najdi architecture, jewel teal and sand palette, refined minimal, "

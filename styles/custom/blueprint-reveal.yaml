@@ -63,10 +63,28 @@ motion:
   exit: "scale-down to 40% + hard cut, or pixel/halftone dissolve"
 
 audio:
-  voice_style: "none (music-led)"
-  music_mood: "tight electronic / phonk pulse, 110-128 BPM, hits on every cut"
-  music_volume: 0.6
-  sfx_style: "whooshes on wipes, metallic ting on chrome pass, sub-boom on final lockup, UI clicks on grid points"
+  voice_style: "optional short brand line VO; otherwise SFX-only"
+  music_mood: "none (VO + SFX only, no music)"
+  music_volume: 0
+  sfx_style: "precise, mechanical, designer-tool sounds: pen ticks, grid snaps, metallic tings, sub drops"
+  sfx_map:
+    construction_line_draw: "thin pen/scribe stroke, length = stroke duration"
+    anchor_point_appear: "tiny UI click per point (staggered with the points)"
+    angle_annotation: "soft digital blip"
+    shape_fill_flood: "short airy swell 0.2s"
+    wordmark_slide_out: "fabric/whoosh slide matching letter stagger"
+    chrome_pass: "high metallic shimmer/ting at the specular peak"
+    pixel_halftone_dissolve: "granular digital crackle"
+    color_flash_invert: "single low thump on the flash frame"
+    mockup_cut: "camera shutter or soft cloth rustle (hoodie/cap)"
+    final_lockup: "sub drop + short reverb tail"
+  sfx_rules:
+    - "No music. The voiceover carries rhythm; SFX carry motion."
+    - "Every SFX is semantically matched to what moves or appears (object, material, action), never a generic hit."
+    - "SFX start on the motion's first frame (0 to -1 frame lead); their length matches the move's duration."
+    - "Whooshes follow the move's speed curve: ease-in exit = rising whoosh, ease-out entrance = falling tail."
+    - "Keep SFX under the voice: peaks around -18 to -12 dBFS, never masking a spoken word; duck SFX -6 dB inside speech."
+    - "Use silence: holds between phrases get room tone only, so the next hit lands."
 
 asset_generation:
   image_prompt_prefix: "minimal brand identity showcase, pure black studio background, single centered logo mark, studio lighting, ultra clean, "

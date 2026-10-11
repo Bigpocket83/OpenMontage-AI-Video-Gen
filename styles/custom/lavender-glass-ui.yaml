@@ -55,10 +55,27 @@ motion:
   exit: "camera pushes through the UI into the next scene"
 
 audio:
-  voice_style: "optional warm short VO"
-  music_mood: "bright lo-fi / soft pop, 90-110 BPM"
-  music_volume: 0.45
-  sfx_style: "soft bubble pops, UI ticks, gentle swooshes, success chime on checkmarks"
+  voice_style: "warm, friendly product VO, short sentences, 2.2-2.6 words/sec"
+  music_mood: "none (VO + SFX only, no music)"
+  music_volume: 0
+  sfx_style: "soft, rounded, glassy UI sounds; nothing harsh"
+  sfx_map:
+    button_tap: "soft rounded click"
+    checkmark_pop: "bubbly pop + tiny glass chime"
+    notification_drop_in: "gentle two-note notification"
+    card_fly_in_stagger: "soft whoosh per card, staggered with the cards"
+    card_flip: "paper-light flip swish"
+    toggle_switch: "clean tactile toggle"
+    camera_push_through: "airy whoosh that rises into the cut"
+    typing: "light keyboard ticks synced to characters"
+    success_state: "small bright chime"
+  sfx_rules:
+    - "No music. The voiceover carries rhythm; SFX carry motion."
+    - "Every SFX is semantically matched to what moves or appears (object, material, action), never a generic hit."
+    - "SFX start on the motion's first frame (0 to -1 frame lead); their length matches the move's duration."
+    - "Whooshes follow the move's speed curve: ease-in exit = rising whoosh, ease-out entrance = falling tail."
+    - "Keep SFX under the voice: peaks around -18 to -12 dBFS, never masking a spoken word; duck SFX -6 dB inside speech."
+    - "Use silence: holds between phrases get room tone only, so the next hit lands."
 
 asset_generation:
   image_prompt_prefix: "soft 3D render, lavender and white palette, frosted glass UI cards floating, clay-style props, soft studio lighting, shallow depth of field, "
