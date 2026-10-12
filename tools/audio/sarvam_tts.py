@@ -148,11 +148,19 @@ class SarvamTTS(BaseTool):
                     "bulbul:v2 — legacy, adds pitch and loudness controls."
                 ),
             },
-            "target_language_code": {
+            "language_code": {
                 "type": "string",
                 "enum": _LANGUAGES,
                 "default": "en-IN",
-                "description": "BCP-47 language of the output speech.",
+                "description": "BCP-47 language of the output speech. Sent as `language_code`.",
+            },
+            "target_language_code": {
+                "type": "string",
+                "enum": _LANGUAGES,
+                "description": (
+                    "Deprecated alias for language_code (Sarvam's pre-rename field). "
+                    "Accepted for compatibility; always sent as `language_code`."
+                ),
             },
             "speaker": {
                 "type": "string",
@@ -243,7 +251,7 @@ class SarvamTTS(BaseTool):
         retryable_errors=["ConnectionError", "Timeout", "429", "503"],
     )
     idempotency_key_fields = [
-        "text", "model", "speaker", "target_language_code", "pace", "output_format",
+        "text", "model", "speaker", "language_code", "pace", "output_format",
     ]
     side_effects = ["writes audio file to output_path", "sends text to the Sarvam AI API"]
     user_visible_verification = [
@@ -342,6 +350,17 @@ class SarvamTTS(BaseTool):
             chunks.append(current)
         return chunks
 
+    @classmethod
+    def _language(cls, inputs: dict[str, Any]) -> str:
+        """Output language. Sarvam renamed the request field from
+        ``target_language_code`` to ``language_code`` with no server-side alias,
+        so the old name is accepted as tool input but never sent on the wire."""
+        return str(
+            inputs.get("language_code")
+            or inputs.get("target_language_code")
+            or cls.DEFAULT_LANGUAGE
+        )
+
     def _build_payload(
         self, inputs: dict[str, Any], text: str, model: str, speaker: str, codec: str
     ) -> dict[str, Any]:
@@ -349,9 +368,7 @@ class SarvamTTS(BaseTool):
             "text": text,
             "model": model,
             "speaker": speaker,
-            "target_language_code": str(
-                inputs.get("target_language_code") or self.DEFAULT_LANGUAGE
-            ),
+            "language_code": self._language(inputs),
             "output_audio_codec": codec,
             "speech_sample_rate": int(inputs.get("speech_sample_rate", 24000)),
         }
@@ -492,9 +509,7 @@ class SarvamTTS(BaseTool):
                 "provider": self.provider,
                 "model": model,
                 "speaker": speaker,
-                "language": str(
-                    inputs.get("target_language_code") or self.DEFAULT_LANGUAGE
-                ),
+                "language": self._language(inputs),
                 "text_length": len(text),
                 "chunks": len(chunks),
                 "request_ids": request_ids,

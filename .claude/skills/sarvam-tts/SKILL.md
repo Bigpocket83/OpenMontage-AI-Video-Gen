@@ -56,8 +56,8 @@ selected model rather than letting the API reject the request.
 ## Using it in a pipeline
 
 Route through `tts_selector` as usual (it auto-discovers `sarvam_tts` and maps
-`voice_id` → `speaker`, `speaking_rate` → `pace`, `language_code` → 
-`target_language_code`), or call the provider tool directly once the user has
+`voice_id` → `speaker`, `speaking_rate` → `pace`, `language_code` →
+Bulbul's `en-IN`-style locale codes), or call the provider tool directly once the user has
 approved Sarvam:
 
 ```python
@@ -67,7 +67,7 @@ tts = registry._tools["sarvam_tts"]
 
 result = tts.execute({
     "text": "हर महीने 10,000 से ज़्यादा छात्र यही सवाल पूछते हैं।",
-    "target_language_code": "hi-IN",
+    "language_code": "hi-IN",
     "model": "bulbul:v3",
     "speaker": "ritu",
     "pace": 0.95,             # a touch slower reads as more authoritative
@@ -95,7 +95,7 @@ whole narration section and let the tool handle the limit.
   separated (`A I` vs `AI`); for a recurring brand or term, a v3 pronunciation
   dictionary (`dict_id`) is steadier than respelling it in every segment.
 - **Match the language code to the script.** Devanagari text with
-  `target_language_code: "en-IN"` produces mangled output — set `hi-IN`.
+  `language_code: "en-IN"` produces mangled output — set `hi-IN`.
 
 ## Choosing a delivery
 

@@ -176,12 +176,33 @@ class TestPayload:
 
     def test_language_and_codec_carried(self):
         payload = SarvamTTS()._build_payload(
-            {"target_language_code": "hi-IN", "speech_sample_rate": 44100},
+            {"language_code": "hi-IN", "speech_sample_rate": 44100},
             "नमस्ते", "bulbul:v3", "ritu", "mp3",
         )
-        assert payload["target_language_code"] == "hi-IN"
+        assert payload["language_code"] == "hi-IN"
         assert payload["output_audio_codec"] == "mp3"
         assert payload["speech_sample_rate"] == 44100
+
+    def test_language_sent_as_language_code(self):
+        # Sarvam renamed target_language_code -> language_code with no alias:
+        # the request body must carry only the current key.
+        payload = SarvamTTS()._build_payload({}, "Hello", "bulbul:v3", "shubh", "wav")
+        assert payload["language_code"] == "en-IN"
+        assert "target_language_code" not in payload
+
+    def test_legacy_target_language_code_alias(self):
+        payload = SarvamTTS()._build_payload(
+            {"target_language_code": "ta-IN"}, "வணக்கம்", "bulbul:v3", "ritu", "wav"
+        )
+        assert payload["language_code"] == "ta-IN"
+        assert "target_language_code" not in payload
+
+    def test_language_code_wins_over_alias(self):
+        payload = SarvamTTS()._build_payload(
+            {"language_code": "hi-IN", "target_language_code": "ta-IN"},
+            "नमस्ते", "bulbul:v3", "ritu", "wav",
+        )
+        assert payload["language_code"] == "hi-IN"
 
     def test_base_url_override(self, monkeypatch):
         monkeypatch.setenv("SARVAM_API_BASE_URL", "https://proxy.example.com/")
@@ -272,7 +293,7 @@ class TestExecute:
         res = SarvamTTS().execute({
             "text": "Welcome to the future of learning.",
             "speaker": "ritu",
-            "target_language_code": "hi-IN",
+            "language_code": "hi-IN",
             "output_path": str(out),
         })
 
@@ -281,6 +302,8 @@ class TestExecute:
         assert res.data["provider"] == "sarvam"
         assert res.data["speaker"] == "ritu"
         assert res.data["language"] == "hi-IN"
+        assert captured["json"]["language_code"] == "hi-IN"
+        assert "target_language_code" not in captured["json"]
         assert res.data["chunks"] == 1
         assert res.data["request_ids"] == ["req_1"]
         assert out.read_bytes() == FAKE_WAV
@@ -392,7 +415,8 @@ class TestExecute:
         assert result.success
         assert result.data["selected_tool"] == "sarvam_tts"
         assert captured["json"]["speaker"] == "ritu"
-        assert captured["json"]["target_language_code"] == "hi-IN"
+        assert captured["json"]["language_code"] == "hi-IN"
+        assert "target_language_code" not in captured["json"]
         assert captured["json"]["pace"] == 0.95
         assert "pitch" not in captured["json"]
         assert captured["json"]["output_audio_codec"] == "mp3"

@@ -295,8 +295,15 @@ class TTSSelector(BaseTool):
         if inputs.get("model_id") and not inputs.get("model"):
             adapted["model"] = inputs["model_id"]
 
-        language = inputs.get("language_code") or inputs.get("voice_language")
-        if language and not inputs.get("target_language_code"):
+        # Bulbul's request field is `language_code` (renamed from
+        # `target_language_code`); normalise the shared control into its locale form.
+        language = (
+            inputs.get("target_language_code")
+            or inputs.get("language_code")
+            or inputs.get("voice_language")
+        )
+        adapted.pop("target_language_code", None)
+        if language:
             code = str(language).strip()
             # "hi" -> "hi-IN"; "en-US" and other non-Indian locales fall back to
             # Indian English rather than a code Bulbul would reject.
@@ -304,7 +311,7 @@ class TTSSelector(BaseTool):
                 code = f"{code.lower()}-IN"
             elif not code.upper().endswith("-IN"):
                 code = "en-IN"
-            adapted["target_language_code"] = code
+            adapted["language_code"] = code
 
         speed = inputs.get("speaking_rate", inputs.get("speed"))
         if speed is not None and inputs.get("pace") is None:
