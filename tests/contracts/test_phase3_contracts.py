@@ -695,6 +695,7 @@ class TestCapabilityMetadata:
             "azure",
             "cartesia",
             "dashscope",
+            "deepgram",
             "doubao",
             "elevenlabs",
             "fish_audio",
