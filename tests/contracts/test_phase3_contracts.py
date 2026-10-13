@@ -696,6 +696,7 @@ class TestCapabilityMetadata:
             "cartesia",
             "dashscope",
             "doubao",
+            "dreamapi",
             "elevenlabs",
             "fish_audio",
             "fal.ai",
