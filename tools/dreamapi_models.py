@@ -225,7 +225,7 @@ def build_body(model_id: str, inputs: dict[str, Any], capability: str) -> tuple[
         raise ValueError(f"{model_id} is a {spec['capability']} model, not {capability}")
     allowed = {field["key"] for field in spec["fields"]}
     for key, value in inputs.items():
-        if value is not None and key not in allowed and key not in {"output_path", "poll_interval", "poll_timeout", "task_id"}:
+        if value is not None and key not in allowed and key not in {"model", "output_path", "poll_interval", "poll_timeout", "task_id"}:
             raise ValueError(f"{key} is not supported by DreamAPI model {model_id}")
     flat = dict(spec["constants"])
     for field in spec["fields"]:

@@ -55,7 +55,10 @@ def test_catalog_covers_every_public_dreamapi_tool():
     assert len({spec["capability"] for spec in MODELS.values()}) == 4
 
 
-def test_invalid_input_fails_before_network():
+def test_model_id_is_not_sent_as_a_body_field():
+    _spec, body = build_body("wan-2.1-text", {"model": "wan-2.1-text", "prompt": "city", "output_path": "out.mp4"}, "video_generation")
+    assert body["prompt"] == "city"
+    assert "model" not in body
     with pytest.raises(ValueError, match="duration"):
         build_body("dreamvideo-3-text", {"prompt": "city", "duration": 2}, "video_generation")
     with pytest.raises(ValueError, match="image"):
