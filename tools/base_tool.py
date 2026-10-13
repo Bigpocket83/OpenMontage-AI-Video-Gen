@@ -309,9 +309,20 @@ def _is_cacheable(tool: "BaseTool", inputs: dict[str, Any]) -> bool:
 def _result_from_cache(restored: dict[str, Any], dest: Any) -> "ToolResult":
     """Build a ToolResult for a cache hit that was materialized to ``dest``."""
     data = dict(restored.get("data") or {})
-    # Repoint the stored output reference to where the caller asked for it.
-    if "output" in data:
-        data["output"] = str(dest)
+    # Repoint only the declared local-output references. Cache admission is
+    # single-artifact; remote URLs, input paths, and other provenance stay put.
+    original_outputs = {
+        data[name] for name in ("output", "output_path")
+        if isinstance(data.get(name), str)
+    }
+    for name in ("outputs", "video_paths", "image_paths", "audio_paths"):
+        values = data.get(name)
+        if (isinstance(values, list) and len(values) == 1
+                and isinstance(values[0], str) and values[0] in original_outputs):
+            data[name] = [str(dest)]
+    for name in ("output", "output_path"):
+        if name in data:
+            data[name] = str(dest)
     data["cached"] = True
     return ToolResult(
         success=True,
