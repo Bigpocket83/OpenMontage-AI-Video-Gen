@@ -292,6 +292,10 @@ def _is_cacheable(tool: "BaseTool", inputs: dict[str, Any]) -> bool:
     the same bytes: deterministic always, seeded only when a seed is pinned
     (an unpinned seed is effectively stochastic), stochastic never.
     """
+    # A documented preflight must reach the tool's dry-run branch without
+    # materializing an artifact or touching the cache's access metadata.
+    if inputs.get("dry_run") and "dry_run" in tool.input_schema.get("properties", {}):
+        return False
     if not tool.idempotency_key_fields:
         return False
     if not inputs.get("output_path"):
