@@ -139,6 +139,7 @@ class MLXAudioTTS(BaseTool):
         "apple_silicon": True,
         "local_generation": True,
         "output_formats": ["wav"],
+        "open_model_fields": ["model_id"],
         "hugging_face_model_ids": True,
         "local_model_paths": True,
         "voice_selection": "model_dependent",

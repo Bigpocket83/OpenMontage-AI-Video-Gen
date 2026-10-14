@@ -17,6 +17,7 @@ from jsonschema.exceptions import ValidationError
 
 import tools.audio.mlx_audio_tts as mlx_provider
 from tools.analysis.audio_probe import AudioProbe
+from tools.audio.elevenlabs_tts import ElevenLabsTTS
 from tools.audio.mlx_audio_tts import MLXAudioTTS
 from tools.audio.tts_selector import TTSSelector
 from tools.base_tool import DependencyError, ToolResult, ToolStatus
@@ -126,6 +127,7 @@ def test_contract_declares_canonical_local_provider():
     assert tool.supports["voice_selection"] == "model_dependent"
     assert tool.supports["multilingual"] == "model_dependent"
     assert tool.supports["voice_cloning"] == "model_dependent"
+    assert info["supports"]["open_model_fields"] == ["model_id"]
 
 
 def test_wav_schema_pattern_is_ecma_compatible_and_case_insensitive(tmp_path):
@@ -686,7 +688,12 @@ def test_generation_is_serialized_across_threads(tmp_path, monkeypatch):
     assert max_active == 1
 
 
-def test_selector_discovers_and_routes_only_to_mlx_audio(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "model_id",
+    [None, mlx_provider.DEFAULT_MODEL_ID, "org/custom-mlx-model", "local"],
+    ids=["implicit-default", "explicit-default", "hugging-face", "local-path"],
+)
+def test_selector_discovers_and_routes_only_to_mlx_audio(tmp_path, monkeypatch, model_id):
     model = _model(np.ones(1000, dtype=np.float32))
     load_model, _, _, _ = _install_mock_runtime(monkeypatch, [model])
     provider = MLXAudioTTS()
@@ -700,26 +707,69 @@ def test_selector_discovers_and_routes_only_to_mlx_audio(tmp_path, monkeypatch):
     discovered = selector._providers()
     assert discovered == [provider]
 
-    result = selector.execute(
-        {
-            "text": "hello",
-            "output_path": str(tmp_path / "speech.wav"),
-            "preferred_provider": "mlx_audio",
-            "allowed_providers": ["mlx_audio"],
-            "project_dir": str(tmp_path),
-            "sample_mode": False,
-            "task_context": {"privacy_required": True},
-            "voice_performance": {"tone": "warm"},
-        }
-    )
+    inputs = {
+        "text": "hello",
+        "output_path": str(tmp_path / "speech.wav"),
+        "preferred_provider": "mlx_audio",
+        "allowed_providers": ["mlx_audio"],
+        "project_dir": str(tmp_path),
+        "sample_mode": False,
+        "task_context": {"privacy_required": True},
+        "voice_performance": {"tone": "warm"},
+    }
+    if model_id == "local":
+        local_model = tmp_path / "local-model"
+        local_model.mkdir()
+        model_id = str(local_model)
+    if model_id is not None:
+        inputs["model_id"] = model_id
+
+    result = selector.execute(inputs)
 
     assert result.success is True
     assert result.data["selected_tool"] == "mlx_audio_tts"
     assert result.data["selected_provider"] == "mlx_audio"
     assert result.data["alternatives_considered"] == []
-    load_model.assert_called_once_with(mlx_provider.DEFAULT_MODEL_ID)
-    model.generate.assert_called_once_with(
-        text="hello",
-        voice=mlx_provider.DEFAULT_VOICE_ID,
-        stream=False,
+    expected_model = model_id or mlx_provider.DEFAULT_MODEL_ID
+    assert result.data["model"] == expected_model
+    load_model.assert_called_once_with(expected_model)
+    generate_kwargs = {"text": "hello", "stream": False}
+    if expected_model == mlx_provider.DEFAULT_MODEL_ID:
+        generate_kwargs["voice"] = mlx_provider.DEFAULT_VOICE_ID
+    model.generate.assert_called_once_with(**generate_kwargs)
+
+
+@pytest.mark.parametrize("allowed", [None, ["mlx_audio"]])
+@pytest.mark.parametrize(
+    "model_id",
+    [mlx_provider.DEFAULT_MODEL_ID, "org/custom-mlx-model", "/models/local-mlx"],
+)
+def test_selector_unavailable_explicit_mlx_model_never_falls_back(
+    tmp_path, monkeypatch, allowed, model_id
+):
+    provider = MLXAudioTTS()
+    other_provider = ElevenLabsTTS()
+    selector = TTSSelector()
+    monkeypatch.setattr(provider, "get_status", lambda: ToolStatus.UNAVAILABLE)
+    monkeypatch.setattr(other_provider, "get_status", lambda: ToolStatus.AVAILABLE)
+    mlx_execute = MagicMock()
+    other_execute = MagicMock()
+    monkeypatch.setattr(provider, "execute", mlx_execute)
+    monkeypatch.setattr(other_provider, "execute", other_execute)
+    monkeypatch.setattr(selector, "_providers", lambda: [provider, other_provider])
+
+    result = selector.execute(
+        {
+            "text": "hello",
+            "model_id": model_id,
+            "output_path": str(tmp_path / "speech.wav"),
+            "preferred_provider": "mlx_audio",
+            "allowed_providers": allowed,
+        }
     )
+
+    assert result.success is False
+    assert result.error == "No TTS provider available."
+    mlx_execute.assert_not_called()
+    other_execute.assert_not_called()
+    assert not (tmp_path / "speech.wav").exists()
