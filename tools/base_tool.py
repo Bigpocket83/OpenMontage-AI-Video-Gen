@@ -569,13 +569,15 @@ class BaseTool(ABC):
 
         File-valued fields are fingerprinted by content, not by path string, so
         rewriting an input file at the same path changes the key rather than
-        serving output derived from the old bytes. Output-path fields are not in
-        this set, so the same content is a hit regardless of where the caller
-        wants the file to land.
+        serving output derived from the old bytes. For tools that exclude output
+        paths from this set, placement alone does not change the key. The normalized
+        destination suffix is included because local encoders select their
+        output container from it; moving between formats must render again.
         """
         key_data = {
             "tool": self.name,
             "version": self.version,
+            "output_suffix": Path(inputs.get("output_path") or "").suffix.lower(),
             "fields": {
                 k: _fingerprint_value(inputs.get(k))
                 for k in self.idempotency_key_fields
