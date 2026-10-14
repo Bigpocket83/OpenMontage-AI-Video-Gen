@@ -703,8 +703,10 @@ class TestCapabilityMetadata:
             "google_tts",
             "inworld",
             "kling_official",
+            "moss",
             "openai",
             "piper",
+            "voxcpm",
         }
 
 
