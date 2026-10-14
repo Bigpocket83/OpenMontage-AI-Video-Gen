@@ -327,3 +327,60 @@ def test_actual_video_rendering_inputs_change_cached_artifact(
         assert paths[3].read_bytes() == paths[1].read_bytes()
     finally:
         reset_default_asset_cache()
+
+
+@pytest.mark.skipif(
+    not shutil.which("ffmpeg") or not shutil.which("ffprobe"),
+    reason="Native FFmpeg required",
+)
+def test_scene_analysis_cache_tracks_requested_minimum_length(tmp_path, monkeypatch):
+    from tools.analysis.scene_detect import SceneDetect
+
+    source = tmp_path / "cuts.mp4"
+    ff(
+        [
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=black:size=32x32:rate=10:duration=3",
+            "-vf",
+            "drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,1,1.99)'",
+            "-c:v",
+            "libx264",
+            str(source),
+        ]
+    )
+    monkeypatch.setenv("OPENMONTAGE_ASSET_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setenv("OPENMONTAGE_ASSET_CACHE_MAX_GB", "0.01")
+    reset_default_asset_cache()
+    rows, paths, flags = [], [], []
+    try:
+        tool = SceneDetect()
+        for name, minimum, enabled in [
+            ("first", 1, True),
+            ("changed", 1.5, True),
+            ("reference", 1.5, False),
+            ("repeat", 1.5, True),
+        ]:
+            monkeypatch.setenv("OPENMONTAGE_ASSET_CACHE", "1" if enabled else "0")
+            path = tmp_path / f"{name}.json"
+            result = tool.execute(
+                {
+                    "input_path": str(source),
+                    "min_scene_length_seconds": minimum,
+                    "output_path": str(path),
+                }
+            )
+            assert result.success, result.error
+            rows.append(json.loads(path.read_text(encoding="utf-8")))
+            paths.append(path)
+            flags.append(result.from_cache)
+        # Physical cuts at1s/2s: the second minimum excludes the first cut.
+        # Read the produced JSON, independently of the key or cached metadata.
+        assert len(rows[0]["scenes"]) == 3
+        assert len(rows[2]["scenes"]) == 2
+        assert rows[1] == rows[2] != rows[0]
+        assert flags == [False, False, False, True]
+        assert paths[3].read_bytes() == paths[1].read_bytes()
+    finally:
+        reset_default_asset_cache()
