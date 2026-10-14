@@ -25,7 +25,7 @@ from tools.base_tool import (
 
 class AudioMixer(BaseTool):
     name = "audio_mixer"
-    version = "0.1.0"
+    version = "0.1.1"
     tier = ToolTier.CORE
     capability = "audio_processing"
     provider = "ffmpeg"
@@ -428,8 +428,9 @@ class AudioMixer(BaseTool):
 
         # Use FFmpeg sidechaincompress for ducking
         music_vol = ducking.get("music_volume_during_speech", 0.15)
-        attack = ducking.get("attack_ms", 200) / 1000
-        release = ducking.get("release_ms", 500) / 1000
+        # FFmpeg sidechaincompress accepts milliseconds, like this API.
+        attack = ducking.get("attack_ms", 200)
+        release = ducking.get("release_ms", 500)
 
         # Sidechain compress: use speech as the key signal to duck music
         filter_complex = (
@@ -614,8 +615,9 @@ class AudioMixer(BaseTool):
 
             # Apply sidechain ducking — music is compressed, [speech_key] is the key
             duck_params = ducking if isinstance(ducking, dict) else {}
-            attack = duck_params.get("attack_ms", 200) / 1000
-            release = duck_params.get("release_ms", 500) / 1000
+            # FFmpeg sidechaincompress accepts milliseconds, like this API.
+            attack = duck_params.get("attack_ms", 200)
+            release = duck_params.get("release_ms", 500)
             music_vol = duck_params.get("music_volume_during_speech", 0.15)
 
             filter_parts.append(
