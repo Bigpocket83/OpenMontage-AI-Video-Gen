@@ -156,3 +156,122 @@ def test_actual_reframe_matches_independent_display_crop(
     decode = ["ffmpeg", "-v", "error", "-i"]
     suffix = ["-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
     assert run(decode + [str(output)] + suffix) == run(decode + [str(oracle)] + suffix)
+
+
+def test_old_version_cache_is_missed_then_new_render_is_reused(tmp_path, monkeypatch):
+    from lib.asset_cache import get_default_asset_cache, reset_default_asset_cache
+
+    monkeypatch.setenv("OPENMONTAGE_ASSET_CACHE", "1")
+    monkeypatch.setenv("OPENMONTAGE_ASSET_CACHE_DIR", str(tmp_path / "cache"))
+    reset_default_asset_cache()
+    try:
+        source = tmp_path / "source.mp4"
+        legacy = tmp_path / "legacy.mp4"
+        output = tmp_path / "correct.mp4"
+        repeat = tmp_path / "repeat.mp4"
+        oracle = tmp_path / "oracle.mp4"
+        faces = tmp_path / "faces.json"
+        faces.write_text('{"faces": []}', encoding="utf-8")
+        run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=black:s=96x64:r=4:d=0.5",
+                "-vf",
+                "drawbox=x=36:y=0:w=24:h=64:color=lime:t=fill,setsar=2/1",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                str(source),
+            ]
+        )
+        # Portable compatibility fixture: the previous encoded-pixel crop and
+        # previous version's real cache identity, without requiring git history.
+        run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-y",
+                "-i",
+                str(source),
+                "-vf",
+                "crop=48:64:24:0,scale=48:64",
+                "-c:v",
+                "libx264",
+                str(legacy),
+            ]
+        )
+        inputs = {
+            "input_path": str(source),
+            "output_path": str(output),
+            "target_width": 48,
+            "target_height": 64,
+            "face_tracking_json": str(faces),
+            "smoothing_window": 1,
+        }
+        old_identity = AutoReframe()
+        old_identity.version = "0.1.0"
+        assert get_default_asset_cache().store(
+            old_identity.cache_key(inputs),
+            legacy,
+            tool_name=old_identity.name,
+            tool_version="0.1.0",
+            data={"output": str(legacy)},
+        )
+        result = AutoReframe().execute(inputs)
+        assert result.success, result.error
+        assert not result.data.get("cached", False)
+        stream = json.loads(
+            run(
+                [
+                    "ffprobe",
+                    "-v",
+                    "error",
+                    "-select_streams",
+                    "v:0",
+                    "-show_entries",
+                    "stream=sample_aspect_ratio,display_aspect_ratio",
+                    "-of",
+                    "json",
+                    str(output),
+                ]
+            )
+        )["streams"][0]
+        assert stream["sample_aspect_ratio"] == "1:1"
+        assert stream["display_aspect_ratio"] == "3:4"
+        run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-y",
+                "-i",
+                str(source),
+                "-vf",
+                "crop=24:64:36:0,scale=48:64,setsar=1",
+                "-c:v",
+                "libx264",
+                "-crf",
+                "18",
+                "-preset",
+                "fast",
+                str(oracle),
+            ]
+        )
+        suffix = ["-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
+        assert run(["ffmpeg", "-v", "error", "-i", str(output)] + suffix) == run(
+            ["ffmpeg", "-v", "error", "-i", str(oracle)] + suffix
+        )
+        repeated = AutoReframe().execute(dict(inputs, output_path=str(repeat)))
+        assert repeated.success and repeated.data["cached"]
+        assert repeat.read_bytes() == output.read_bytes()
+        assert legacy.exists()
+    finally:
+        reset_default_asset_cache()

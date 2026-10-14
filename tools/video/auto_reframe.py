@@ -44,7 +44,7 @@ ASPECT_PRESETS = {
 
 class AutoReframe(BaseTool):
     name = "auto_reframe"
-    version = "0.1.0"
+    version = "0.1.1"
     tier = ToolTier.CORE
     capability = "video_post"
     provider = "ffmpeg"
