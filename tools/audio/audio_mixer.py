@@ -25,7 +25,7 @@ from tools.base_tool import (
 
 class AudioMixer(BaseTool):
     name = "audio_mixer"
-    version = "0.1.0"
+    version = "0.1.1"
     tier = ToolTier.CORE
     capability = "audio_processing"
     provider = "ffmpeg"
