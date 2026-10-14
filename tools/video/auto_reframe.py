@@ -120,7 +120,8 @@ class AutoReframe(BaseTool):
     resume_support = ResumeSupport.FROM_START
     idempotency_key_fields = [
         "input_path", "target_aspect", "target_width", "target_height",
-        "smoothing_window", "face_padding",
+        "smoothing_window", "face_padding", "face_tracking_json", "sample_fps",
+        "codec", "crf",
     ]
     side_effects = ["writes reframed video to output_path"]
     user_visible_verification = [
