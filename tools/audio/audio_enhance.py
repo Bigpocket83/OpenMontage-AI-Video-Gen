@@ -120,7 +120,9 @@ class AudioEnhance(BaseTool):
     }
 
     resource_profile = ResourceProfile(cpu_cores=1, ram_mb=512, vram_mb=0, disk_mb=500)
-    idempotency_key_fields = ["input_path", "preset", "custom_af"]
+    idempotency_key_fields = [
+        "input_path", "preset", "custom_af", "audio_codec", "audio_bitrate",
+    ]
     side_effects = ["writes enhanced audio/video to output_path"]
     user_visible_verification = [
         "Listen to enhanced audio and compare with original",
