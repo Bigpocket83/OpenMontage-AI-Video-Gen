@@ -7,6 +7,7 @@ not installed.
 
 from __future__ import annotations
 
+import math
 import time
 from pathlib import Path
 from typing import Any
@@ -238,6 +239,33 @@ class AudioMixer(BaseTool):
         """
         return f"[{in_label}]alimiter=limit=1:level=0[{out_label}]"
 
+    def _probe_duration(self, path: Any, kind: str) -> float:
+        """Return the media's format duration in seconds, or raise a clear error.
+
+        ffprobe exits 0 and prints ``N/A`` when it can open a file but cannot
+        determine its duration (e.g. a zero-sample WAV), so the exit code alone
+        does not validate the value.
+        """
+        cmd = [
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "csv=p=0",
+            str(path),
+        ]
+        output = self.run_command(cmd).stdout.strip()
+        raw = output.split("\n")[0].strip() if output else ""
+        try:
+            duration = float(raw)
+        except ValueError:
+            duration = math.nan
+        if not math.isfinite(duration) or duration <= 0:
+            raise ValueError(
+                f"Cannot determine the duration of {kind} {path} "
+                f"(ffprobe reported {raw or 'nothing'!r}). The file may be empty "
+                "or damaged; regenerate or repair it before mixing."
+            )
+        return duration
+
     def _track_filters(self, track: dict[str, Any]) -> list[str]:
         """Build per-track filters on the source timeline before scheduling it.
 
@@ -257,13 +285,7 @@ class AudioMixer(BaseTool):
         if fade_in > 0:
             filters.append(f"afade=t=in:d={fade_in}")
         if fade_out > 0:
-            duration_cmd = [
-                "ffprobe", "-v", "error",
-                "-show_entries", "format=duration",
-                "-of", "csv=p=0",
-                track["path"],
-            ]
-            duration = float(self.run_command(duration_cmd).stdout.strip().split("\n")[0])
+            duration = self._probe_duration(track["path"], "track")
             fade_start = max(0.0, duration - float(fade_out))
             filters.append(f"afade=t=out:st={fade_start}:d={fade_out}")
         if delay_ms > 0:
@@ -729,13 +751,7 @@ class AudioMixer(BaseTool):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Get video duration
-        dur_cmd = [
-            "ffprobe", "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "csv=p=0",
-            video_path,
-        ]
-        total_dur = float(self.run_command(dur_cmd).stdout.strip().split("\n")[0])
+        total_dur = self._probe_duration(video_path, "video")
 
         # Build volume expression for each segment with smooth fades
         parts = []

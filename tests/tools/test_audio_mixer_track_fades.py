@@ -93,3 +93,60 @@ def test_delayed_track_with_fade_out_remains_audible_after_its_start(tmp_path):
     mean_line = next(line for line in measured.stderr.splitlines() if "mean_volume" in line)
     mean_db = float(mean_line.split("mean_volume:")[1].strip().split(" ")[0])
     assert mean_db > -60, f"delayed tone was unexpectedly silent: {mean_db} dB"
+
+
+@pytest.mark.parametrize("probe_output", ["N/A\n", "", "0.0\n", "nan\n"])
+def test_fade_out_on_track_with_unknown_duration_names_the_track(
+    tmp_path, monkeypatch, probe_output
+):
+    """#771: an unusable ffprobe duration must not surface as a raw float() error."""
+    track = tmp_path / "empty.wav"
+    track.write_bytes(b"stub")
+
+    def fake_run(self, cmd, **kwargs):
+        if cmd[0] == "ffprobe":
+            return SimpleNamespace(stdout=probe_output, stderr="")
+        return SimpleNamespace(stdout="", stderr="")
+
+    monkeypatch.setattr(AudioMixer, "run_command", fake_run)
+    result = AudioMixer().execute(
+        {
+            "operation": "full_mix",
+            "tracks": [{"path": str(track), "role": "speech", "fade_out_seconds": 0.2}],
+            "normalize": False,
+            "target_duration": 1,
+            "output_path": str(tmp_path / "mixed.wav"),
+        }
+    )
+
+    assert not result.success
+    assert "could not convert" not in result.error
+    assert str(track) in result.error
+    assert "duration" in result.error
+
+
+@pytest.mark.skipif(shutil.which("ffprobe") is None, reason="ffprobe required")
+def test_zero_sample_wav_with_fade_out_is_rejected_with_a_clear_error(tmp_path):
+    """End-to-end #771: ffprobe reports N/A for a zero-sample WAV."""
+    import wave
+
+    track = tmp_path / "empty.wav"
+    with wave.open(str(track), "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(22050)
+        audio.writeframes(b"")
+
+    result = AudioMixer().execute(
+        {
+            "operation": "full_mix",
+            "tracks": [{"path": str(track), "role": "speech", "fade_out_seconds": 0.2}],
+            "normalize": False,
+            "target_duration": 1,
+            "output_path": str(tmp_path / "mixed.wav"),
+        }
+    )
+
+    assert not result.success
+    assert "Cannot determine the duration of track" in result.error
+    assert str(track) in result.error
