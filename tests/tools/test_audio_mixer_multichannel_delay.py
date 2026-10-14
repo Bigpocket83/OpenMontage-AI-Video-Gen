@@ -1,14 +1,18 @@
 """Scheduling delays apply to every source channel, including surround audio."""
 
+import json
 import shutil
 import struct
+import subprocess
 import wave
 
 import pytest
 
 from tools.audio.audio_mixer import AudioMixer
 
-pytestmark = pytest.mark.skipif(not shutil.which("ffmpeg"), reason="FFmpeg required")
+pytestmark = pytest.mark.skipif(
+    not shutil.which("ffmpeg") or not shutil.which("ffprobe"), reason="FFmpeg required"
+)
 
 
 @pytest.mark.parametrize("operation", ["mix", "full_mix"])
@@ -27,11 +31,21 @@ def test_scheduled_track_keeps_channels_on_the_same_timeline(tmp_path, operation
         "tracks": [{"path": str(source), "role": "sfx", "start_seconds": delay}],
     })
     assert result.success, result.error
-    with wave.open(str(output), "rb") as audio:
-        assert audio.getnchannels() == channels
-        assert audio.getframerate() == rate
-        count = audio.getnframes()
-        samples = struct.unpack("<" + "h" * (count * channels), audio.readframes(count))
+    # Python 3.11's wave reader cannot decode WAVE_FORMAT_EXTENSIBLE surround
+    # headers. Inspect the actual stream and decode its native channel layout
+    # without forcing a channel count or sample rate.
+    stream = json.loads(subprocess.check_output(
+        ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+         "stream=channels,sample_rate", "-of", "json", str(output)], timeout=10,
+    ))["streams"][0]
+    assert stream["channels"] == channels
+    assert int(stream["sample_rate"]) == rate
+    raw = subprocess.check_output(
+        ["ffmpeg", "-v", "error", "-i", str(output), "-f", "s16le", "-c:a", "pcm_s16le", "-"],
+        timeout=10,
+    )
+    assert len(raw) % (2 * channels) == 0
+    samples = struct.unpack("<" + "h" * (len(raw) // 2), raw)
     # Oracle from the declared schedule and input PCM, not from a filter string:
     # each channel is silent before the scheduled onset and carries its own
     # source amplitude after onset. Mono/stereo/no-delay controls remain valid.
