@@ -196,7 +196,12 @@ class AudioMixer(BaseTool):
     }
 
     resource_profile = ResourceProfile(cpu_cores=2, ram_mb=1024, vram_mb=0, disk_mb=500)
-    idempotency_key_fields = ["operation", "tracks", "ducking"]
+    idempotency_key_fields = [
+        "operation", "tracks", "ducking", "primary_audio", "secondary_audio",
+        "duck_level", "input_path", "normalize", "loudnorm_target",
+        "video_path", "music_path", "music_volume", "segments",
+        "fade_duration", "target_duration",
+    ]
     side_effects = ["writes mixed audio file to output_path"]
     user_visible_verification = [
         "Listen to mixed output and verify speech clarity and music ducking",
