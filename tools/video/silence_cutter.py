@@ -99,8 +99,8 @@ class SilenceCutter(BaseTool):
     retry_policy = RetryPolicy(max_retries=1, retryable_errors=["FFmpeg error"])
     resume_support = ResumeSupport.FROM_START
     idempotency_key_fields = [
-        "input_path", "mode", "silence_threshold_db",
-        "min_silence_duration", "padding_seconds",
+        "input_path", "mode", "silence_threshold_db", "min_silence_duration",
+        "padding_seconds", "silence_speed_factor", "codec", "crf",
     ]
     side_effects = ["writes cut video to output_path"]
     user_visible_verification = [
