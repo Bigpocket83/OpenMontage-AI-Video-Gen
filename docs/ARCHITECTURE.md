@@ -45,7 +45,7 @@ OpenMontage/
 │   ├── tool_registry.py    # Auto-discovery singleton registry
 │   ├── cost_tracker.py     # Budget governance (estimate → reserve → reconcile)
 │   ├── analysis/           # Transcription, scene detection, frame sampling, video understanding
-│   ├── audio/              # TTS (ElevenLabs, OpenAI, Piper, Azure, Google), music gen, mixing, enhancement
+│   ├── audio/              # TTS (ElevenLabs, OpenAI, Piper, Azure, Google, MLX-Audio), music gen, mixing, enhancement
 │   ├── avatar/             # Talking head animation, lip sync
 │   ├── enhancement/        # Upscale, bg removal, face enhance/restore, color grading
 │   ├── graphics/           # Image gen (FLUX, GPT Image, Recraft, local diffusion), stock, diagrams, code snippets, math animation
@@ -153,7 +153,7 @@ Selectors route based on: user preference when explicitly set, then scored ranki
 
 **Analysis (5):** transcriber (WhisperX), azure_stt, scene_detect, frame_sampler, video_understand (CLIP/BLIP-2)
 
-**Audio (9):** elevenlabs_tts, google_tts, openai_tts, piper_tts, azure_tts, tts_selector, music_gen, audio_mixer, audio_enhance
+**Audio (10):** elevenlabs_tts, google_tts, openai_tts, piper_tts, azure_tts, tts_selector, music_gen, audio_mixer, audio_enhance, mlx_audio_tts
 
 **Avatar (2):** talking_head (SadTalker/MuseTalk), lip_sync (Wav2Lip)
 
@@ -507,6 +507,7 @@ tests/
 - Piper (offline TTS)
 - ManimCE (math animations)
 - Mermaid CLI (diagram generation)
+- MLX-Audio (Apple Silicon local TTS; see `requirements-mlx-audio.txt`)
 
 **Python packages:** pyyaml, pydantic, jsonschema, python-dotenv (core); pytest, pytest-asyncio (dev); torch, torchvision, torchaudio (GPU)
 

@@ -309,6 +309,8 @@ OpenMontage picks between Remotion and HyperFrames at proposal time (locked as `
 
 If you want the second one, prompt for a **documentary montage**, **tone poem**, or **stock-footage collage**, and explicitly say **use real footage only**.
 
+On an Apple Silicon Mac, run `make install-mlx-audio` and set `MLX_AUDIO_ENABLED=true` to enable the free local `mlx_audio` TTS provider. It has a tested default model and voice, supports per-request or environment overrides, and may download model weights on first use.
+
 ---
 
 ## Try These Prompts
@@ -557,6 +559,7 @@ Each tool declares which Layer 3 skills it relies on. The agent reads Layer 1 to
 | **Piper** | Local | Completely free, offline |
 | **Azure Speech** | Cloud API | Fast multilingual speech services |
 | **DashScope / Doubao / Fish Audio** | Cloud API | Additional multilingual and expressive voice options |
+| **MLX-Audio** | Local GPU | Free in-process TTS with configurable model and voice on Apple Silicon |
 
 </details>
 

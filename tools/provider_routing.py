@@ -6,7 +6,12 @@ from __future__ import annotations
 def filter_explicit_route(inputs, candidates):
     tool_name = inputs.get("preferred_tool")
     host = inputs.get("hosting_provider")
-    model = inputs.get("model") or inputs.get("model_id") or inputs.get("model_name")
+    model_field = next(
+        (field for field in ("model", "model_id", "model_name") if inputs.get(field)),
+        None,
+    )
+    model = inputs.get(model_field) if model_field else None
+    allowed = set(inputs.get("allowed_providers") or [])
     selected = []
     for tool in candidates:
         if tool_name and tool.name != tool_name:
@@ -15,14 +20,36 @@ def filter_explicit_route(inputs, candidates):
             continue
         if model:
             props = tool.input_schema.get("properties", {})
-            models = set()
-            for field in ("model", "model_id", "model_name"):
-                models.update(props.get(field, {}).get("enum", []))
-            models.update(getattr(tool, "_MODELS", {}))
-            models.update(getattr(tool, "_MODEL_ALIASES", {}))
-            models.update(tool.get_info().get("model_catalog", {}))
-            if model not in models:
-                continue
+            # Open-model providers opt in for specific canonical schema fields.
+            # They must also be explicitly targeted: otherwise an unknown cloud
+            # model could silently route to a local loader during auto-selection.
+            open_fields = getattr(tool, "supports", {}).get("open_model_fields", [])
+            accepts_open_model = (
+                isinstance(open_fields, (list, tuple))
+                and model_field in open_fields
+                and model_field in props
+                and "enum" not in props[model_field]
+            )
+            if accepts_open_model:
+                provider = getattr(tool, "provider", None)
+                accepts_open_model = bool(
+                    tool_name
+                    or host
+                    or provider
+                    and (
+                        inputs.get("preferred_provider") == provider
+                        or allowed == {provider}
+                    )
+                )
+            if not accepts_open_model:
+                models = set()
+                for field in ("model", "model_id", "model_name"):
+                    models.update(props.get(field, {}).get("enum", []))
+                models.update(getattr(tool, "_MODELS", {}))
+                models.update(getattr(tool, "_MODEL_ALIASES", {}))
+                models.update(tool.get_info().get("model_catalog", {}))
+                if model not in models:
+                    continue
         operation = inputs.get("generation_mode") or inputs.get("operation")
         routes = getattr(tool, "routes", None) or getattr(tool, "models", None)
         if isinstance(routes, dict) and operation and operation != "rank":
