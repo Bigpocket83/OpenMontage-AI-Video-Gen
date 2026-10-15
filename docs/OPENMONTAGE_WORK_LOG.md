@@ -2,6 +2,42 @@
 
 ---
 
+### 2026-10-15 — P1 pilot started: stages 1–3 built from real sources
+- **Goal:** begin the first end-to-end pilot (Master Plan P1) on the plan's named candidate
+  topic, with evidence that can actually be checked.
+- **Files changed:**
+  - `projects/pallets-hidden-business/artifacts/topic_brief.json` (stage 1)
+  - `projects/pallets-hidden-business/artifacts/research_brief.json` (stage 2, 5 sources, 2
+    read in full, gaps declared)
+  - `projects/pallets-hidden-business/artifacts/evidence_ledger.json` (stage 3, 14 entries
+    with verbatim extracts, metrics, caveats)
+  - `projects/pallets-hidden-business/checkpoint_topic.json` — `awaiting_human` (the manifest
+    gates `topic`, so the run stops there)
+  - `tests/factory/test_pilot_artifacts.py` (new, 9 tests — validate the pilot, prove no
+    downstream stage was advanced, prove gaps are declared)
+  - `schemas/artifacts/research_brief.schema.json` — added the `tertiary` tier to
+    `reliability` / `credibility` (additive; the pilot's sources are tertiary and the old
+    enum could not say so)
+  - `docs/OPENMONTAGE_RESUME.md`, `docs/OPENMONTAGE_WORK_LOG.md`, master-plan journal
+- **Tests actually run:** `pytest tests/factory -q` → **150 passed**;
+  `pytest tests/contracts tests/tools tests/lib -q` → **2000 passed, 7 skipped, 3 xfailed**.
+- **Results / exit codes:** exit 0 on both. Pilot artifacts validate against their schemas;
+  `lib.artifact_ids.resolve_all` reports 0 dangling references.
+- **Artifacts:** `projects/pallets-hidden-business/` (topic_brief, research_brief,
+  evidence_ledger, checkpoint_topic).
+- **Budget / provider verification:** two articles fetched and read in full
+  (`en.wikipedia.org/wiki/Pallet`, `en.wikipedia.org/wiki/ISPM_15`); every quote in the ledger
+  is verbatim from those pages. No paid call, no generation, no upload.
+- **Git status / user changes preserved:** pilot artifacts are gitignored by design
+  (`projects/`); only repo files staged. No destructive commands.
+- **Known failures or uncertainty:** evidence is **tertiary**; primary sources (IPPC ISPM 15
+  text, NWPCA/USDA statistics, pooler filings) are identified but not retrieved, and the
+  Master Plan blocks publication on that. The run is paused at the topic gate.
+- **Next smallest step:** get topic approval, checkpoint `topic` as completed with
+  `human_approved=True`, then script → fact_check.
+
+---
+
 ### 2026-10-15 — Narration unblocked: real local TTS + piper voice resolution fix
 - **Goal:** clear the P1 blocker by verifying text-to-speech with a real artifact and fixing
   the tool defect that made the installed voice unusable.

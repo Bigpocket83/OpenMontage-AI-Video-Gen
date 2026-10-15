@@ -391,6 +391,25 @@ Kilo сообщил о Mermaid → анимированный MP4. Провер�
 
 ### История
 
+#### 2026-10-15 — P1-пилот начат: этапы 1–3 на реальных источниках
+- Goal: начать первый E2E-пилот (P1) на теме, названной в мастер-плане, с проверяемыми
+  доказательствами.
+- Files changed: `projects/pallets-hidden-business/artifacts/{topic_brief,research_brief,
+  evidence_ledger}.json`; `checkpoint_topic.json` (awaiting_human);
+  `tests/factory/test_pilot_artifacts.py` (9 тестов);
+  `schemas/artifacts/research_brief.schema.json` (добавлен третичный уровень).
+- Tests actually run: `tests/factory` 150 passed; `tests/contracts tests/tools tests/lib`
+  2000 passed, 7 skipped, 3 xfailed.
+- Results / exit codes: exit 0. Артефакты проходят схемы; `artifact_ids.resolve_all` даёт 0
+  висячих ссылок.
+- Budget / provider verification: две статьи загружены и прочитаны полностью, все цитаты
+  дословные. Платных вызовов, генерации и загрузок не было.
+- Known failures: доказательства третичные; первичные источники (IPPC ISPM 15, статистика
+  NWPCA/USDA, отчётность пулеров) идентифицированы, но не получены — публикация заблокирована
+  по правилу мастер-плана. Прогон остановлен на гейте `topic`.
+- Next smallest step: получить одобрение темы, записать `topic` как completed с
+  `human_approved=True`, затем script → fact_check.
+
 #### 2026-10-15 — озвучка разблокирована: реальный локальный TTS + фикс разрешения голоса
 - Goal: снять блокер P1, проверив TTS реальным артефактом и исправив дефект инструмента.
 - Files changed: `tools/audio/piper_tts.py` (`resolve_voice_model`, инструкции установки);
