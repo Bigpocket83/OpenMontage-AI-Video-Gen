@@ -2,6 +2,42 @@
 
 ---
 
+### 2026-10-15 — Narration unblocked: real local TTS + piper voice resolution fix
+- **Goal:** clear the P1 blocker by verifying text-to-speech with a real artifact and fixing
+  the tool defect that made the installed voice unusable.
+- **Files changed:**
+  - `tools/audio/piper_tts.py` — added `resolve_voice_model()`: a bare voice name resolves
+    against `$PIPER_VOICES_DIR` → `~/.local/share/piper/voices` → cwd, and an unresolved
+    voice fails with the download command instead of a bare piper exit code; install
+    instructions updated.
+  - `tests/tools/test_piper_tts.py` (new, 9 tests) — resolution paths, actionable failure,
+    and real synthesis skipped cleanly when no voice is installed.
+  - `tests/factory/test_narration_real_audio.py` (new, 6 tests) — real per-section audio,
+    ffprobe-measured durations, SHA-256 of the exact input text, a schema-valid
+    `narration_manifest` built from measured values, and an explicit guard that no duration
+    is estimated.
+  - `docs/OPENMONTAGE_RESUME.md`, `docs/OPENMONTAGE_WORK_LOG.md`, master-plan journal.
+- **Tests actually run:**
+  - `pytest tests/tools/test_piper_tts.py -q` → **9 passed**
+  - `pytest tests/factory/test_narration_real_audio.py -q` → **6 passed**
+  - `pytest tests/factory tests/tools/test_piper_tts.py tests/contracts -q` →
+    **1390 passed, 7 skipped**
+- **Results / exit codes:** all exit 0. Narration artifact: 232 492-byte WAV,
+  `pcm_s16le`, 22 050 Hz, mono, `duration=5.270930`, full `ffmpeg -f null -` decode clean.
+- **Artifacts:** `/tmp/opencode/piper_smoke.wav` (verification render); voice installed at
+  `~/.local/share/piper/voices/en_US-lessac-medium.onnx`.
+- **Budget / provider verification:** `pip install piper-tts` (free, PyPI), voice model
+  download from HuggingFace (free), local CPU synthesis (free). `piper_tts.estimate_cost` is
+  `0.0`. No paid API call.
+- **Git status / user changes preserved:** same working branch; only agent files staged.
+- **Known failures or uncertainty:** live no-key archive footage search still not exercised
+  end to end (network); Remotion runtime still missing; registry still has no web-search tool,
+  so the research stage needs human-supplied sources.
+- **Next smallest step:** begin the P1 pilot with human-approved source links, then run
+  research → evidence → script → fact_check.
+
+---
+
 ### 2026-10-15 — Business-documentary pipeline implemented (P0.3 / P0.5)
 - **Goal:** implement the Master Plan's 12-stage business-documentary pipeline, its 13 director
   skills, the artifact schemas it needs, and the governance gates ($0 mode, ID resolution).

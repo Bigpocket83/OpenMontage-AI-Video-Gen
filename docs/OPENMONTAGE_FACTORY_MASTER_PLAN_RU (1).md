@@ -391,6 +391,22 @@ Kilo сообщил о Mermaid → анимированный MP4. Провер�
 
 ### История
 
+#### 2026-10-15 — озвучка разблокирована: реальный локальный TTS + фикс разрешения голоса
+- Goal: снять блокер P1, проверив TTS реальным артефактом и исправив дефект инструмента.
+- Files changed: `tools/audio/piper_tts.py` (`resolve_voice_model`, инструкции установки);
+  `tests/tools/test_piper_tts.py` (9 тестов); `tests/factory/test_narration_real_audio.py`
+  (6 тестов); RESUME/WORK_LOG.
+- Tests actually run: test_piper_tts 9 passed; test_narration_real_audio 6 passed;
+  factory + tools/piper + contracts → 1390 passed, 7 skipped.
+- Results / exit codes: все exit 0. Артефакт озвучки: WAV 232 492 байт, pcm_s16le,
+  22 050 Hz, mono, duration=5.270930, полное декодирование без ошибок.
+- Budget / provider verification: установка piper-tts и модели голоса бесплатны,
+  синтез локальный, `estimate_cost()==0.0`. Платных вызовов не было.
+- Known failures: живой поиск футажа в no-key архивах ещё не выполнялся; Remotion runtime
+  отсутствует; в реестре нет web-search инструмента.
+- Next smallest step: начать P1-пилот с согласованных человеком ссылок на источники, затем
+  research → evidence → script → fact_check.
+
 #### 2026-10-15 — бизнес-документальный pipeline реализован (P0.3 / P0.5)
 - Goal: реализовать 12-этапный business-documentary pipeline, 13 director skills,
   схемы артефактов и гейты ($0 режим, разрешение ID).

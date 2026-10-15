@@ -23,9 +23,9 @@ resolution, fail-closed QA — and prove the chain with a real test suite.
 | **P0.1 Re-verify git state / `--db-path`** | ✅ Complete | `git status --short` clean; no `--db-path` file exists in the repo; the modified files listed in the Kilo screenshot are not present. Nothing was deleted or reset. |
 | **P0.2 Diagnose the pytest timeout** | ✅ Complete | Root cause: **pytest was not installed** in this environment (`No module named pytest`) and `tests/factory/` did not exist. Installed `pytest 9.1.1` + `pytest-asyncio` (dev deps from `requirements-dev.txt`, $0). Test groups then run **separately with exit codes** — see the table below. |
 | **P0.3 Verify 12 stages + 13 skills** | ✅ Implemented | They did **not** exist. Now created: `pipeline_defs/business-documentary.yaml` (12 stages) + `skills/pipelines/business-documentary/` (13 skills) + 7 new artifact schemas. Contract tests assert stage order, gates, tool names and skill files. |
-| **P0.4 Verify TTS / diagram / stock render** | 🟡 Partial | **Diagram: verified with a real artifact** (Pillow render writes a 8.5 KB PNG). **Stock adapters: error taxonomy verified** with fakes. **TTS: BLOCKED — no synthesizer installed** (`piper_tts` status `unavailable`, `cmd:piper` missing; no cloud TTS keys). Narration stage must fail closed. |
+| **P0.4 Verify TTS / diagram / stock render** | 🟢 Mostly verified | **Diagram: verified with a real artifact** (Pillow render writes an 8.5 KB PNG). **TTS: verified with real audio** — `piper-tts` 1.8.0 installed, `en_US-lessac-medium` voice downloaded, real WAV synthesized (5.27 s for the test sentence, pcm_s16le 22 050 Hz mono, clean full decode). **Stock adapters: error taxonomy verified** with fakes; live no-key archive search not yet run. |
 | **P0.5 Verify $0 gate + stock adapter errors** | ✅ Implemented | New `lib/zero_cost_gate.py`: unknown cost / unknown route / unapproved paid call / unavailable tool → **BLOCKED**. Failure taxonomy (auth / billing / rate_limit / transport / no_results) kept distinct; `reroute_allowed()` is always `False`. |
-| **P1 First E2E pilot (60–90s)** | ⛔ Blocked by environment | Requires a TTS synthesizer (narration) and real footage download (network + licenses). Not attempted — no paid or unlicensed calls made. |
+| **P1 First E2E pilot (60–90s)** | ⏳ Ready to start | Narration is now unblocked. Remaining inputs: real sources for research (no web tool in the registry) and a footage pass through `direct_clip_search`. |
 
 ---
 
@@ -49,7 +49,9 @@ resolution, fail-closed QA — and prove the chain with a real test suite.
   run ledger.
 - ✅ `lib/artifact_ids.py` — cross-artifact ID resolution (evidence / source / scene /
   asset / QA gate) with precise dangling-reference reporting.
-- ✅ `tests/factory/` — 135 tests, all passing.
+- ✅ `tools/audio/piper_tts.py` — bare voice name now resolves through `PIPER_VOICES_DIR`,
+  `~/.local/share/piper/voices` and cwd, and fails with an actionable message.
+- ✅ `tests/factory/` — 141 tests, all passing.
 - ✅ Environment fix (free, no repo change): installed **ffmpeg 6.1.1** via apt. This
   flipped `video_post` 0/10 → 9/10, `audio_processing` 0/2 → 2/2 and cleared two
   pre-existing environment-caused test failures.
@@ -66,6 +68,11 @@ resolution, fail-closed QA — and prove the chain with a real test suite.
   human-supplied sources or `video_downloader` / `transcript_fetcher` (both `unavailable`
   without `yt_dlp` / `youtube_transcript_api`).
 - ❌ `music_library/` does not exist yet; music decisions stay open.
+- ✅ TTS unblocked this session: `piper-tts` 1.8.0 + `en_US-lessac-medium` voice installed
+  locally (`~/.local/share/piper/voices/`); `piper_tts` now reports `available`
+  (tts capability 0/13 → 1/13).
+- ✅ `piper_tts` bare-voice resolution fixed: `PIPER_VOICES_DIR` →
+  `~/.local/share/piper/voices` → cwd, with an error naming the download command.
 
 ---
 
@@ -80,13 +87,17 @@ New:
 - `lib/zero_cost_gate.py`, `lib/artifact_ids.py`
 - `tests/factory/{__init__,test_pipeline_contract,test_artifact_schemas,
   test_artifact_id_resolution,test_zero_cost_gate,test_dry_run_chain,
-  test_factory_environment}.py`
+  test_factory_environment,test_narration_real_audio}.py`
+- `tests/tools/test_piper_tts.py`
 - `docs/OPENMONTAGE_RESUME.md`, `docs/OPENMONTAGE_WORK_LOG.md`
 
 Modified (additive only):
 - `schemas/artifacts/__init__.py` (7 new artifact names)
 - `schemas/artifacts/{script,scene_plan,asset_manifest,research_brief,render_report,
   publish_log}.schema.json` (new optional/provenance fields)
+- `tools/audio/piper_tts.py` (voice resolution + install instructions)
+- `tests/contracts/test_runtime_presentation_contract.py` (planning-stage lookup falls back
+  to a pipeline's first stage)
 - `AGENTS.md` (Factory session reading order)
 
 ---
@@ -121,33 +132,41 @@ DiagramGen().execute({'diagram_type':'boxes', ..., 'output_path': tmp})
 # success=True, 8590-byte PNG written, PNG magic bytes verified
 ```
 
+P0.4 — real narration artifact (local, free):
+
+```bash
+pip install piper-tts                                # 1.8.0 + onnxruntime
+python -m piper.download_voices en_US-lessac-medium  # voice model
+ffprobe /tmp/opencode/piper_smoke.wav
+# codec_name=pcm_s16le, sample_rate=22050, channels=1, duration=5.270930
+ffmpeg -v error -i .../piper_smoke.wav -f null -     # decode exit 0
+```
+
 ---
 
 ## Stop Point & Next Action
 
-**Stop Point:** Pipeline contract, schemas, governance modules and the factory test suite are
-implemented and green. Baseline suite verified.
+**Stop Point:** Pipeline contract, schemas, governance modules, factory test suite and a
+verified local narration path are all in place and pushed.
 
-**Next Action (exact):** P1 first E2E pilot — blocked until narration exists. The smallest
-unblocking step is a local TTS path:
+**Next Action (exact):** start the P1 pilot at stage 1–2 with sources the human can verify:
 
-```bash
-python -c "import piper" 2>&1        # expected: not installed
-pip install piper-tts                # if a Python 3.14-compatible wheel exists
-# or: report the TTS gap to the human as an administrator setup request
-```
-
-Then: one 60–90s topic (candidate: "Why Pallets Matter to Global Shipping"), research →
-evidence → script → fact_check with real sources, storyboard, and a footage pass through
-`direct_clip_search` with per-query result classes.
+1. Ask the human for (or approve fetching) 5–8 source links for the candidate topic
+   *"Why Pallets Matter to Global Shipping"* — the registry has **no web-search tool**, so
+   research cannot invent sources on its own.
+2. With those links, run `research` → `evidence` (evidence_ledger with verbatim extracts and
+   stable `SRC-`/`EV-` IDs), then `script` → `fact_check`.
+3. Then `storyboard` → `narration` (piper is available) → `footage` (`direct_clip_search`,
+   per-query result classes) → `editorial` → `compose` (ffmpeg or hyperframes, runtime
+   presented and logged) → `qa` → `publish` (manual approval only).
 
 ---
 
 ## Blockers & Risks
 
-1. **No TTS synthesizer** — `piper_tts` needs the `piper` binary + voice model; no cloud TTS
-   keys; strict $0 mode blocks unpriced routes. The narration stage must fail closed (never
-   fake audio/durations).
+1. **No TTS synthesizer** — ✅ RESOLVED this session: `piper-tts` 1.8.0 installed with the
+   `en_US-lessac-medium` voice; `piper_tts` reports `available`. Cloud TTS remains blocked by
+   strict $0 mode (unknown pricing → BLOCKED).
 2. **No video_generation / image_generation** (0/31, 0/23 configured) — the pipeline is
    designed around real footage, so this is acceptable, but it leaves no fallback B-roll.
 3. **`clip_retrieval` (CLIP) and `corpus_population` unavailable** — only `direct_clip_search`
@@ -167,5 +186,6 @@ evidence → script → fact_check with real sources, storyboard, and a footage 
   BLOCKED; non-zero cost → BLOCKED without explicit user approval; tool not `available` →
   BLOCKED (surface as setup request, never reroute).
 - **Calls made this session:** ffmpeg install (apt, free), pip install of dev dependencies
-  (free), local diagram render (local CPU, free), `apt-get update`. **No paid API call, no
-  video generation, no upload, no YouTube publish.**
+  and `piper-tts` (free), voice-model download (free), local diagram render and local
+  narration synthesis (local CPU, free). **No paid API call, no video generation, no upload,
+  no YouTube publish.**
