@@ -1,197 +1,199 @@
-"""Gemini native text-to-speech provider tool.
-
-Uses the Gemini API (google-genai SDK) speech-generation models, which accept a
-natural-language style instruction ("Say this deadpan and fast: ...") instead of
-SSML. Output is 24 kHz 16-bit mono PCM, written as WAV.
-"""
+"""Gemini 3.8 TTS via Interactions, separate from Cloud Text-to-Speech."""
 
 from __future__ import annotations
-
+import base64
 import os
-import time
-import wave
 from pathlib import Path
-from typing import Any
+from tools.provider_pricing import PriceQuoteRequired
 
 from tools.base_tool import (
     BaseTool,
-    Determinism,
-    ExecutionMode,
-    ResourceProfile,
-    RetryPolicy,
-    ToolResult,
+    ToolTier,
     ToolRuntime,
     ToolStability,
     ToolStatus,
-    ToolTier,
+    ToolResult,
+    ResourceProfile,
 )
-
-_DEFAULT_MODEL = "gemini-2.5-flash-preview-tts"
-_SAMPLE_RATE = 24000
 
 
 class GeminiTTS(BaseTool):
     name = "gemini_tts"
-    version = "0.1.0"
-    tier = ToolTier.VOICE
     capability = "tts"
-    provider = "gemini_tts"
-    stability = ToolStability.BETA
-    execution_mode = ExecutionMode.SYNC
-    determinism = Determinism.STOCHASTIC
+    provider = "gemini"
+    tier = ToolTier.VOICE
     runtime = ToolRuntime.API
-
-    dependencies = []
-    install_instructions = (
-        "Set GEMINI_API_KEY (or GOOGLE_API_KEY) to a Gemini API key.\n"
-        "  Get one at https://aistudio.google.com/\n"
-        "  Requires the 'google-genai' package (pip install google-genai).\n"
-        "  Optionally set GEMINI_TTS_MODEL to override the default model."
-    )
-    fallback = "google_tts"
-    fallback_tools = ["google_tts", "openai_tts", "piper_tts"]
-    agent_skills = ["text-to-speech"]
-
-    capabilities = [
-        "text_to_speech",
-        "voice_selection",
-        "style_prompting",
-        "multilingual",
+    stability = ToolStability.BETA
+    agent_skills = ["provider-model-refresh"]
+    install_instructions = "Configure Gemini credentials and google-genai >= 2.25.0."
+    capabilities = ["text_to_speech", "multi_speaker"]
+    supports = {"multi_speaker": True, "style_control": True}
+    best_for = ["Expressive single-speaker narration and directed dialogue"]
+    resource_profile = ResourceProfile(network_required=True)
+    idempotency_key_fields = [
+        "model_id",
+        "text",
+        "voice_id",
+        "style",
+        "turns",
+        "speakers",
     ]
-    supports = {
-        "voice_cloning": False,
-        "multilingual": True,
-        "offline": False,
-        "native_audio": True,
-        "ssml": False,
-    }
-    best_for = [
-        "expressive narration steered by natural-language style prompts",
-        "comedic or character-driven delivery",
-        "Gemini API users without a Cloud TTS setup",
-    ]
-    not_good_for = [
-        "voice cloning",
-        "fully offline production",
-        "very long single requests — synthesize per scene",
-    ]
-
     input_schema = {
         "type": "object",
-        "required": ["text"],
         "properties": {
-            "text": {"type": "string", "description": "Text to speak"},
-            "style": {
+            "operation": {
                 "type": "string",
-                "default": "",
-                "description": (
-                    "Natural-language delivery instruction prepended to the text, "
-                    "e.g. 'Read in a brisk, dry, comedic documentary tone'."
-                ),
+                "enum": ["generate", "list_voices"],
+                "default": "generate",
             },
-            "voice": {
+            "model_id": {
                 "type": "string",
-                "default": "Charon",
-                "description": "Gemini prebuilt voice name (e.g. Charon, Puck, Kore, Fenrir, Orus, Aoede).",
+                "enum": ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"],
+                "default": "gemini-3.8-flash-tts",
             },
-            "model": {
-                "type": "string",
-                "description": "Gemini TTS model id. Defaults to GEMINI_TTS_MODEL or " + _DEFAULT_MODEL,
+            "text": {"type": "string", "minLength": 1},
+            "voice_id": {"type": "string", "default": "Kore"},
+            "style": {"type": "string"},
+            "turns": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["speaker", "text"],
+                    "properties": {
+                        "speaker": {"type": "string"},
+                        "text": {"type": "string", "minLength": 1},
+                        "style": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            "speakers": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["speaker", "voice"],
+                    "properties": {
+                        "speaker": {"type": "string"},
+                        "voice": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                },
             },
             "output_path": {"type": "string"},
         },
     }
 
-    resource_profile = ResourceProfile(
-        cpu_cores=1, ram_mb=256, vram_mb=0, disk_mb=100, network_required=True
-    )
-    retry_policy = RetryPolicy(
-        max_retries=2, retryable_errors=["rate_limit", "timeout", "unavailable"]
-    )
-    idempotency_key_fields = ["text", "style", "voice", "model"]
-    side_effects = ["writes audio file to output_path", "calls Gemini API"]
-    user_visible_verification = ["Listen to generated audio for natural delivery and pacing"]
+    def get_status(self):
+        from tools.google_credentials import has_google_credentials
 
-    def _get_api_key(self) -> str | None:
-        return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        return (
+            ToolStatus.AVAILABLE if has_google_credentials() else ToolStatus.UNAVAILABLE
+        )
 
-    def get_status(self) -> ToolStatus:
-        if not self._get_api_key():
-            return ToolStatus.UNAVAILABLE
-        try:
-            import google.genai  # noqa: F401
-        except ImportError:
-            return ToolStatus.UNAVAILABLE
-        return ToolStatus.AVAILABLE
+    def estimate_cost(self, inputs):
+        if inputs.get("operation") == "list_voices":
+            return 0.0
+        raise PriceQuoteRequired(
+            "Gemini TTS requires a current token-based price quote"
+        )
 
-    def estimate_cost(self, inputs: dict[str, Any]) -> float:
-        # Approximate: ~15 chars of English per second of speech, ~32 audio
-        # tokens per second, output billed at ~$10 / 1M audio tokens.
-        # Verify against https://ai.google.dev/gemini-api/docs/pricing.
-        seconds = len(inputs.get("text", "")) / 15
-        return round(seconds * 32 * 10 / 1_000_000, 4)
+    def build_request(self, inputs):
+        from jsonschema import validate
 
-    def execute(self, inputs: dict[str, Any]) -> ToolResult:
-        api_key = self._get_api_key()
-        if not api_key:
-            return ToolResult(success=False, error="No Gemini API key found. " + self.install_instructions)
-
-        start = time.time()
-        try:
-            result = self._generate(inputs, api_key)
-        except Exception as exc:
-            return ToolResult(
-                success=False,
-                error=f"Gemini TTS failed: {str(exc).replace(api_key, '[REDACTED]')}",
+        validate(inputs, self.input_schema)
+        if bool(inputs.get("text")) == bool(inputs.get("turns")):
+            raise ValueError("Provide text or turns, exclusively")
+        if inputs.get("turns"):
+            speakers = inputs.get("speakers", [])
+            names = [s["speaker"] for s in speakers]
+            if len(set(names)) != len(names) or any(
+                t["speaker"] not in names for t in inputs["turns"]
+            ):
+                raise ValueError(
+                    "Every turn requires a unique configured speaker voice"
+                )
+            turns = inputs["turns"]
+            speech = {"speakers": speakers}
+        else:
+            turns = [{"text": inputs["text"], "style": inputs.get("style", "")}]
+            speech = [{"voice": inputs.get("voice_id", "Kore")}]
+        content = []
+        for turn in turns:
+            metadata = {
+                "type": "speech_metadata",
+                **{k: turn[k] for k in ("speaker", "style") if turn.get(k)},
+            }
+            content.append(
+                {"type": "text", "text": turn["text"], "annotations": [metadata]}
             )
-        result.duration_seconds = round(time.time() - start, 2)
-        result.cost_usd = self.estimate_cost(inputs)
-        return result
+        return {
+            "model": inputs.get("model_id", "gemini-3.8-flash-tts"),
+            "input": [{"type": "user_input", "content": content}],
+            "response_format": {"type": "audio"},
+            "generation_config": {"speech_config": speech},
+        }
 
-    def _generate(self, inputs: dict[str, Any], api_key: str) -> ToolResult:
-        from google import genai
-        from google.genai import types
+    def execute(self, inputs):
+        try:
+            if inputs.get("operation") == "list_voices":
+                from tools.provider_jobs import request_json
 
-        text = inputs["text"]
-        style = inputs.get("style", "").strip()
-        voice = inputs.get("voice", "Charon")
-        model = inputs.get("model") or os.environ.get("GEMINI_TTS_MODEL") or _DEFAULT_MODEL
-        prompt = f"{style}:\n{text}" if style else text
-
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["AUDIO"],
-                speech_config=types.SpeechConfig(
-                    voice_config=types.VoiceConfig(
-                        prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)
+                key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+                if not key:
+                    raise ValueError(
+                        "Voice library discovery requires a Gemini API key"
                     )
-                ),
-            ),
-        )
-        pcm = response.candidates[0].content.parts[0].inline_data.data
+                voices = request_json(
+                    "GET",
+                    "https://generativelanguage.googleapis.com/v1beta/voices",
+                    headers={"x-goog-api-key": key},
+                )
+                return ToolResult(success=True, data=voices)
+            path = Path(inputs.get("output_path", "gemini_tts.wav"))
+            if path.suffix.lower() != ".wav":
+                raise ValueError(
+                    "This adapter requests WAV; output_path must end in .wav"
+                )
+            request = self.build_request(inputs)
+            from tools.google_credentials import get_genai_client
 
-        output_path = Path(inputs.get("output_path", "tts_output.wav")).with_suffix(".wav")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with wave.open(str(output_path), "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(_SAMPLE_RATE)
-            wf.writeframes(pcm)
-
-        return ToolResult(
-            success=True,
-            data={
-                "provider": self.provider,
-                "voice": voice,
-                "model": model,
-                "text_length": len(text),
-                "output": str(output_path),
-                "format": "wav",
-                "audio_seconds": round(len(pcm) / (2 * _SAMPLE_RATE), 2),
-            },
-            artifacts=[str(output_path)],
-            model=f"gemini-tts/{model}/{voice}",
-        )
+            result = get_genai_client().interactions.create(**request)
+            audio = getattr(result, "output_audio", None)
+            if not audio or not getattr(audio, "data", None):
+                audio = next(
+                    (
+                        part
+                        for step in (getattr(result, "steps", None) or [])
+                        if getattr(step, "type", None) == "model_output"
+                        for part in (getattr(step, "content", None) or [])
+                        if getattr(part, "type", None) == "audio"
+                        and getattr(part, "data", None)
+                    ),
+                    None,
+                )
+            if not audio:
+                raise ValueError("Gemini returned no audio")
+            data = (
+                base64.b64decode(audio.data)
+                if isinstance(audio.data, str)
+                else audio.data
+            )
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+            return ToolResult(
+                success=True,
+                data={
+                    "provider": self.provider,
+                    "model": request["model"],
+                    "output": str(path),
+                    "format": "wav",
+                    "cost_status": "unquoted",
+                },
+                artifacts=[str(path)],
+                cost_usd=None,
+                model=request["model"],
+            )
+        except Exception as exc:
+            return ToolResult(success=False, error=str(exc))
