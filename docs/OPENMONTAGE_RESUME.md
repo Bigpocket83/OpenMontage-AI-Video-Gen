@@ -2,6 +2,8 @@
 
 **Last Updated:** 2026-10-15
 **Git Branch:** `factory/business-documentary-pilot` (working branch; `main` untouched)
+**Last Commit:** `40f1910` — feat(business-documentary): 12-stage evidence-first factory pipeline
+**Remote:** pushed and confirmed to `origin/factory/business-documentary-pilot`
 **Master Plan:** docs/OPENMONTAGE_FACTORY_MASTER_PLAN_RU (1).md v1.0
 
 ---
@@ -95,10 +97,16 @@ Modified (additive only):
 # P0.2 — test infrastructure
 pip install "pytest>=8.0" "pytest-asyncio>=0.23"     # pytest 9.1.1
 
-# P0.2 — per-group runs (no tail, exit codes collected)
-python -m pytest tests/contracts -q   # 1241 passed, 7 skipped   (after ffmpeg install)
-python -m pytest tests/qa tests/lib -q  # 58 passed, 2 skipped
-python -m pytest tests/factory -q       # 135 passed
+# P0.2 — per-group runs (no tail, exit codes collected; after ffmpeg install)
+python -m pytest tests/contracts -q   # 1244 passed, 7 skipped, exit 0
+python -m pytest tests/lib -q         #   58 passed,             exit 0
+python -m pytest tests/qa -q         #    2 skipped,           exit 0
+python -m pytest tests/styles -q     #   15 passed,           exit 0
+python -m pytest tests/backlot -q    #   37 passed, 1 skipped, exit 0
+python -m pytest tests/tools -q      #  687 passed, 3 xfailed, exit 0
+python -m pytest tests/factory -q    #  135 passed,           exit 0
+# tests/pipelines and tests/eval collect no tests (exit 5) — pre-existing:
+# both directories hold harness code/fixtures only.
 
 # Environment fix (free)
 sudo apt-get install -y ffmpeg          # ffmpeg 6.1.1, exit 0
