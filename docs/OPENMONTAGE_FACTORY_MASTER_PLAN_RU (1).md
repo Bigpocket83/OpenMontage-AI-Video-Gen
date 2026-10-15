@@ -391,6 +391,42 @@ Kilo сообщил о Mermaid → анимированный MP4. Провер�
 
 ### История
 
+#### 2026-10-15 — бизнес-документальный pipeline реализован (P0.3 / P0.5)
+- Goal: реализовать 12-этапный business-documentary pipeline, 13 director skills,
+  схемы артефактов и гейты ($0 режим, разрешение ID).
+- Files changed:
+  - `pipeline_defs/business-documentary.yaml` (новый, 12 этапов, budget 0.0)
+  - `skills/pipelines/business-documentary/*` (13 новых director skills)
+  - `schemas/artifacts/`: 7 новых схем + аддитивные расширения `script`,
+    `scene_plan`, `asset_manifest`, `research_brief`, `render_report`, `publish_log`
+  - `lib/zero_cost_gate.py` (новый) — строгий $0 гейт, таксономия ошибок,
+    `search_stats`
+  - `lib/artifact_ids.py` (новый) — проверка ссылок evidence/source/scene/asset
+  - `tests/factory/` (135 тестов)
+  - `AGENTS.md` — порядок чтения для factory-сессий
+- Tests actually run: `tests/factory` 135 passed; `tests/contracts` 1244 passed,
+  7 skipped; `tests/lib` 58 passed; `tests/qa` 2 skipped; `tests/styles` 15 passed;
+  `tests/backlot` 37 passed; `tests/tools` 687 passed.
+- Results / exit codes: все группы зелёные. Два предсуществующих падения
+  (`test_seedance_ark_video.py`) были вызваны отсутствием ffmpeg и исчезли после
+  установки ffmpeg 6.1.1 (apt, бесплатно).
+- Artifacts: реальный рендер диаграммы (PNG 8.5 KB через `DiagramGen`); полная
+  цепочка артефактов прошла `lib.checkpoint` в `tests/factory/test_dry_run_chain.py`.
+- Budget / provider verification: строгий $0 режим реализован в коде и подтверждён
+  тестами (неизвестная стоимость/маршрут, неодобренная платная операция,
+  недоступный инструмент → BLOCKED; `reroute_allowed()` всегда False). Платных
+  вызовов не делалось.
+- Git status / user changes preserved: ветка `factory/business-documentary-pilot`,
+  `main` не тронут; destructive-команд не применялось.
+- Known failures or uncertainty:
+  - Нет TTS-синтезатора на машине (`piper_tts` unavailable) — этап narration должен
+    падать закрыто, без фальшивых аудио/длительностей.
+  - Remotion runtime отсутствует (`remotion-composer/node_modules` пуст);
+    доступны ffmpeg и hyperframes.
+  - В реестре нет web-search инструмента — research зависит от источников от человека.
+- Next smallest step: разблокировать локальную озвучку (проверка установки piper на
+  Python 3.14), затем тема P1-пилота: research → evidence → script → fact_check.
+
 #### 2026-10-14 — отчёт Kilo со скриншота (НЕПОДТВЕРЖДЁННЫЙ СТАТУС)
 - Goal: реализация lean business-documentary pipeline.
 - Reported changes: 12-stage manifest; 13 director skills; Piper TTS; Mermaid animated diagram renderer; scene plan schema extension.
