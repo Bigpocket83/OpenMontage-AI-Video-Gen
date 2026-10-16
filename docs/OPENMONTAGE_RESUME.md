@@ -1,6 +1,6 @@
 # OpenMontage Factory — Session Resume State
 
-**Last Updated:** 2026-10-15
+**Last Updated:** 2026-10-16
 **Git Branch:** `factory/business-documentary-pilot` (working branch; `main` untouched)
 **Last Commit:** `40f1910` — feat(business-documentary): 12-stage evidence-first factory pipeline
 **Remote:** pushed and confirmed to `origin/factory/business-documentary-pilot`
@@ -25,7 +25,7 @@ resolution, fail-closed QA — and prove the chain with a real test suite.
 | **P0.3 Verify 12 stages + 13 skills** | ✅ Implemented | They did **not** exist. Now created: `pipeline_defs/business-documentary.yaml` (12 stages) + `skills/pipelines/business-documentary/` (13 skills) + 7 new artifact schemas. Contract tests assert stage order, gates, tool names and skill files. |
 | **P0.4 Verify TTS / diagram / stock render** | 🟢 Mostly verified | **Diagram: verified with a real artifact** (Pillow render writes an 8.5 KB PNG). **TTS: verified with real audio** — `piper-tts` 1.8.0 installed, `en_US-lessac-medium` voice downloaded, real WAV synthesized (5.27 s for the test sentence, pcm_s16le 22 050 Hz mono, clean full decode). **Stock adapters: error taxonomy verified** with fakes; live no-key archive search not yet run. |
 | **P0.5 Verify $0 gate + stock adapter errors** | ✅ Implemented | New `lib/zero_cost_gate.py`: unknown cost / unknown route / unapproved paid call / unavailable tool → **BLOCKED**. Failure taxonomy (auth / billing / rate_limit / transport / no_results) kept distinct; `reroute_allowed()` is always `False`. |
-| **P1 First E2E pilot (60–90s)** | 🟡 Started — paused at the topic gate | `projects/pallets-hidden-business/`: `topic_brief`, `research_brief` and `evidence_ledger` written from two fully read sources and validated (schemas + ID resolution). `checkpoint_topic.json` is `awaiting_human` — the manifest gates `topic` on a human, so the run stops there until you approve the angle. |
+| **P1 First E2E pilot (60–90s)** | ✅ Complete | `projects/pallets-hidden-business/`: all 11 stages (topic → compose) completed and checkpointed. Rendered MP4 at `renders/pallets-hidden-business.mp4` — h264 1920×1080 30fps, aac 22050Hz mono, 84.975s, 32.16 MB, full `ffprobe` decode clean. Music: silence (recorded decision d-003). Publish excluded by user directive. |
 
 ---
 
@@ -52,9 +52,10 @@ resolution, fail-closed QA — and prove the chain with a real test suite.
 - ✅ `tools/audio/piper_tts.py` — bare voice name now resolves through `PIPER_VOICES_DIR`,
   `~/.local/share/piper/voices` and cwd, and fails with an actionable message.
 - ✅ `tests/factory/` — 150 tests, all passing.
-- ✅ P1 pilot stage 1–3 artifacts for *“Why Pallets Matter to Global Shipping”*
-  (`projects/pallets-hidden-business/artifacts/`), validated and checkpointed at the topic
-  gate.
+- ✅ P1 pilot **all 11 stages** for *“Why Pallets Matter to Global Shipping”*
+  (`projects/pallets-hidden-business/artifacts/`), validated and checkpointed through
+  `compose`. Rendered MP4: h264 1920×1080 30fps, aac 22050Hz mono, 84.975s, 32.16 MB,
+  full `ffprobe` decode clean.
 - ✅ Environment fix (free, no repo change): installed **ffmpeg 6.1.1** via apt. This
   flipped `video_post` 0/10 → 9/10, `audio_processing` 0/2 → 2/2 and cleared two
   pre-existing environment-caused test failures.
@@ -63,14 +64,14 @@ resolution, fail-closed QA — and prove the chain with a real test suite.
 
 ## What's NOT Completed
 
-- ❌ End-to-end rendered pilot MP4 (needs TTS + footage downloads — see blockers).
-- ❌ `piper_tts` usable: `piper` binary and voice model are not installed.
+- ❌ **Publish** — excluded by user directive ("Do not publish videos"); the Master Plan also
+  gates publish on primary-source retrieval, which is still outstanding.
 - ❌ Remotion runtime: `remotion-composer/node_modules` is empty (`npx hyperframes` 0.8.159
   **is** available; ffmpeg is available; Remotion is not).
 - ❌ No web-search tool exists in the registry — the research stage depends on
   human-supplied sources or `video_downloader` / `transcript_fetcher` (both `unavailable`
   without `yt_dlp` / `youtube_transcript_api`).
-- ❌ `music_library/` does not exist yet; music decisions stay open.
+- ❌ `music_library/` does not exist yet; music decision is recorded as silence (d-003).
 - ✅ TTS unblocked this session: `piper-tts` 1.8.0 + `en_US-lessac-medium` voice installed
   locally (`~/.local/share/piper/voices/`); `piper_tts` now reports `available`
   (tts capability 0/13 → 1/13).
@@ -95,9 +96,12 @@ New:
 - `docs/OPENMONTAGE_RESUME.md`, `docs/OPENMONTAGE_WORK_LOG.md`
 
 Run-local (gitignored by design — `projects/` is in `.gitignore`):
-- `projects/pallets-hidden-business/artifacts/{topic_brief,research_brief,evidence_ledger}.json`
-- `projects/pallets-hidden-business/checkpoint_topic.json` (`awaiting_human`)
-- `projects/pallets-hidden-business/project.json`
+- `projects/pallets-hidden-business/` — full pilot: 11 stage artifacts, 11 checkpoints,
+  6 footage clips/stills, 1 diagram, narration WAV, subtitles SRT, and the rendered
+  `renders/pallets-hidden-business.mp4` (h264 1920×1080 30fps, aac, 84.975s, 32.16 MB).
+- `projects/pallets-hidden-business/pallets-hidden-business/` — canonical nested checkpoint
+  directory (`lib.checkpoint._checkpoint_path` resolves here); the top-level copies are
+  preserved for backward compatibility with any tool that reads `projects/<id>/`.
 
 Because the pilot directory is gitignored, `tests/factory/test_pilot_artifacts.py` skips when it
 is absent. If the Codespace is lost, the pilot artifacts must be regenerated from the two
@@ -159,29 +163,18 @@ ffmpeg -v error -i .../piper_smoke.wav -f null -     # decode exit 0
 
 ## Stop Point & Next Action
 
-## Stop Point & Next Action
+**Stop Point:** The P1 pilot is **complete** through stage 11 (`compose`). All 11 stages are
+checkpointed as `completed` with `human_approved=True` (topic gate approved 2026-10-15 via
+decision d-001, "Then execute Phase 1 only"). The rendered MP4
+(`projects/pallets-hidden-business/renders/pallets-hidden-business.mp4`) passes `ffprobe`
+full decode: h264 1920×1080 30fps, aac 22050Hz mono, 84.975s, 32.16 MB. Stage 12 (`publish`)
+is **excluded** by the user directive and by the Master Plan's primary-source gate.
 
-**Stop Point:** The pilot's first three stages are built and validated, and the run is paused
-at the `topic` human gate (`projects/pallets-hidden-business/checkpoint_topic.json`
-= `awaiting_human`). The manifest makes that stage binding, so the run does not advance to
-`research` until a human approves the angle.
-
-**Next Action (exact):** approve or revise the topic, then continue the pilot:
-
-1. **Topic (needs your approval).** Working title *“Why Pallets Matter to Global Shipping”*;
-   unique question *“How does a piece of softwood worth a few dollars become the asset that
-   decides how the world's freight moves — and who profits from keeping it in circulation?”*;
-   75 s, en-US, 16:9. Reply “approved” (or send a different angle) and the run writes
-   `checkpoint_topic.json` as `completed` with `human_approved=True`.
-2. Then `research` and `evidence` artifacts (already prepared and validated) get their
-   checkpoints, followed by `script` → `fact_check` → `storyboard` → `narration` (piper is
-   available) → `footage` (`direct_clip_search`) → `editorial` → `compose` → `qa` → `publish`
-   (manual approval only).
-3. Known caveat to carry forward: today's evidence is **tertiary** (two Wikipedia articles read
-   in full). The Master Plan requires primary sources before publication, so the IPPC ISPM 15
-   text, NWPCA/USDA statistics and a pooler's filings must be retrieved before a publish
-   package is built. Those gaps are recorded in `research_brief.metadata.gaps` rather than
-   papered over.
+**Next Action (exact):** nothing further in Phase 1. The remaining open items are P2 scope:
+- Retrieve primary sources (IPPC ISPM 15 text, NWPCA/USDA statistics, pooler filings) before
+  any publish package — currently blocked by the Master Plan's evidence gate.
+- Populate `music_library/` with hand-verified licensed tracks for future renders.
+- Add a registered web-search tool so `research` does not depend on human-supplied URLs.
 
 ---
 

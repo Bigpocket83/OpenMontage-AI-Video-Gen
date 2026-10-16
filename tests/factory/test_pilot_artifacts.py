@@ -5,9 +5,10 @@ skips when the run is absent (a fresh clone) and validates it when present.
 That keeps the pilot honest: a broken artifact fails CI on the machine that
 produced it instead of silently rotting in a directory nobody checks.
 
-Stage 1–3 of the pilot are complete (topic_brief, research_brief,
-evidence_ledger). The `topic` checkpoint is written `awaiting_human`: the
-manifest gates that stage on a human, so the pipeline pauses there.
+Stages 1–11 of the pilot are complete (topic through compose) with a rendered
+MP4; the `topic` checkpoint was approved by the user on 2026-10-15 (decision
+d-001, "Then execute Phase 1 only") and the run advanced through all gated
+stages. Publish remains excluded by the same directive.
 """
 
 from __future__ import annotations
@@ -29,6 +30,13 @@ PRESENT_STAGES = {
     "topic": ["topic_brief"],
     "research": ["research_brief"],
     "evidence": ["evidence_ledger"],
+    "script": ["script"],
+    "fact_check": ["fact_check_report"],
+    "storyboard": ["scene_plan"],
+    "narration": ["narration_manifest"],
+    "footage": ["asset_manifest"],
+    "editorial": ["alignment_report"],
+    "compose": ["edit_decisions", "render_report"],
 }
 
 pytestmark = pytest.mark.skipif(
@@ -72,23 +80,35 @@ def test_every_evidence_source_resolves_to_the_research_brief() -> None:
         assert entry["source_id"] in known, entry["evidence_id"]
 
 
-def test_the_topic_checkpoint_is_awaiting_a_human() -> None:
-    """The manifest gates `topic`; the run must not have advanced past it."""
+def test_the_topic_checkpoint_was_approved() -> None:
+    """The manifest gates `topic`; the user approved it on 2026-10-15 (decision d-001)."""
 
     checkpoint = read_checkpoint(PILOT_DIR, "pallets-hidden-business", "topic")
     assert checkpoint is not None
-    assert checkpoint["status"] == "awaiting_human"
+    assert checkpoint["status"] == "completed"
     assert checkpoint["human_approval_required"] is True
+    assert checkpoint["human_approved"] is True
     assert checkpoint["artifacts"]["topic_brief"]["unique_question"]
 
 
-def test_no_downstream_stage_was_started() -> None:
-    """Approval is per-gate: nothing past `topic` may be checkpointed."""
+def test_all_stages_through_compose_are_checkpointed() -> None:
+    """Approval was per-run (decision d-001), so stages 1–11 must be checkpointed."""
 
-    for stage in ("research", "evidence", "script"):
-        assert not (PILOT_DIR / f"checkpoint_{stage}.json").exists(), (
-            f"{stage} was advanced before the topic gate was approved"
-        )
+    for stage in (
+        "topic",
+        "research",
+        "evidence",
+        "script",
+        "fact_check",
+        "storyboard",
+        "narration",
+        "footage",
+        "editorial",
+        "compose",
+    ):
+        cp = read_checkpoint(PILOT_DIR, "pallets-hidden-business", stage)
+        assert cp is not None, f"missing checkpoint for {stage}"
+        assert cp["status"] == "completed", f"{stage} is {cp['status']}, not completed"
 
 
 def test_the_pilot_records_its_source_gaps_honestly() -> None:
