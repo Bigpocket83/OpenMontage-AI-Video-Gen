@@ -478,3 +478,16 @@ Kilo сообщил о Mermaid → анимированный MP4. Провер�
 Постоянные правила Kilo лучше хранить в корневом `AGENTS.md` и/или в подключённом `.kilo/rules/` файле согласно текущей версии Kilo. Не предполагать, что этот внешний Markdown автоматически загружен как контекст в каждый запуск: он должен быть в workspace и упомянут в инструкциях.
 
 **Ключевое правило:** перед задачей читай данный мастер-план; после выполнения задачи, тестов и проверки diff обновляй раздел 14. Не меняй мастер-план в середине задачи, чтобы оправдать незавершённую работу; внеси только проверенный статус после окончания. Не меняй код/конфиги вне согласованной задачи.
+
+---
+
+## Changelog
+
+### v3.1 — 2026-10-16 — Milestone A: niche reality check (docs only)
+- Reality check from CODE: 16 registered stock adapters in `tools/video/stock_sources/`
+  (12 keyless/optional-key, 4 key-gated); NASA + NARA adapters exist, DVIDS does not;
+  per-provider storage/rights policy not defined in code; no QA gate measures
+  original-content share; `qa_report.json` gap confirmed (schema exists, artifact not written).
+- Niche decided (CONFIG, not hardcoded): "Aviation & spaceflight test history".
+  Spec: `docs/openmontage/NICHE_PROFILE_SPEC.md`; decision: `docs/openmontage/NICHE_DECISION.md`.
+- No code changes, no installs, no model runs, no process/lock changes in this milestone.

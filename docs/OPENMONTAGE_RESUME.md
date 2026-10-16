@@ -4,7 +4,26 @@
 **Git Branch:** `factory/business-documentary-pilot` (working branch; `main` untouched)
 **Last Commit:** `40f1910` — feat(business-documentary): 12-stage evidence-first factory pipeline
 **Remote:** pushed and confirmed to `origin/factory/business-documentary-pilot`
-**Master Plan:** docs/OPENMONTAGE_FACTORY_MASTER_PLAN_RU (1).md v1.0
+**Master Plan:** docs/OPENMONTAGE_FACTORY_MASTER_PLAN_RU (1).md v1.0 (+ v3.1 changelog entry, Milestone A docs only)
+
+---
+
+## Milestone A — 2026-10-16 (docs only; observed vs assumed)
+
+- **Observed (from CODE):** 16 registered stock adapters in `tools/video/stock_sources/`
+  (12 keyless/optional-key, 4 key-gated); NASA + NARA adapters exist
+  (`tools/video/stock_sources/nasa.py`, `nara.py`), DVIDS does not (zero hits);
+  `Candidate`/`ClipRecord`/`asset_manifest` carry `license` but no
+  `storage_policy`, no `archive_id/caption/date`, no `identifiable_persons`,
+  no `logo_visible`, no `third_party_copyright`, no `credit_required`;
+  `asset_manifest` does have `attribution`, `sha256`, `chosen_interval` (in/out);
+  no per-provider storage/rights policy file exists (`storage_policy` zero hits);
+  no QA gate measures original-content share; `qa_report` schema exists but the QA
+  stage artifact gap stands (no `qa_report.json` written — known gap).
+- **Assumed (not verified):** competition, creator-country monetization eligibility,
+  RPM (third-party estimates only). Recorded in `docs/openmontage/NICHE_DECISION.md`.
+- **Files created:** `docs/openmontage/NICHE_PROFILE_SPEC.md`,
+  `docs/openmontage/NICHE_DECISION.md`. No code, installs, model runs, or lock changes.
 
 ---
 

@@ -2,6 +2,28 @@
 
 ---
 
+### 2026-10-16 — Milestone A: niche reality check + profile spec (docs only)
+- **Goal:** reality check from CODE + niche profile spec; no code/installs/runs/lock changes.
+- **Observed (from CODE):** 16 stock adapters (`tools/video/stock_sources/`): keyless/optional-key =
+  archive_org, nasa, wikimedia, nara, coverr, pond5_pd, loc, mixkit, dareful, esa, jaxa, noaa;
+  key-gated = pexels (`PEXELS_API_KEY`), pixabay_video (`PIXABAY_API_KEY`),
+  unsplash (`UNSPLASH_ACCESS_KEY`), videvo (`VIDEVO_API_KEY`). NASA yes (`nasa.py`), NARA yes
+  (`nara.py`), DVIDS no. `asset_manifest` has license/attribution/sha256/in-out, missing
+  storage_policy + archive_*/identifiable/logo/third-party/credit fields. No per-provider
+  storage/rights policy in code. No original-content-share QA gate. `qa_report.json` gap stands.
+- **Assumed (not verified):** competition, monetization eligibility, RPM — recorded as UNKNOWNS.
+- **Files changed (docs only):** `docs/openmontage/NICHE_PROFILE_SPEC.md` (new),
+  `docs/openmontage/NICHE_DECISION.md` (new), master-plan Changelog v3.1 (appended),
+  `docs/OPENMONTAGE_RESUME.md`, `docs/OPENMONTAGE_WORK_LOG.md` (this entry).
+- **Tests actually run:** none (docs-only milestone; forbidden to run models/tests with side effects —
+  no tests were needed and none were run).
+- **Git status / user changes preserved:** tree was clean at start (`git status --short` empty
+  on `factory/business-documentary-pilot`); docs-only changes staged by agent.
+- **Next smallest step:** implement `niche_profile.yaml` loading/validation in a later milestone
+  (out of scope here).
+
+---
+
 ### 2026-10-16 — P1 pilot stages 4–11 verified; stale checkpoint path reconciled
 - **Goal:** bring the session resume and work log into agreement with the actual pilot state
   (stages 1–11 complete, rendered MP4 on disk) and fix the one defect that made the pilot's
