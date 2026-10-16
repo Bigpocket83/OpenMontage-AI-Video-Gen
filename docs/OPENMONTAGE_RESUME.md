@@ -8,6 +8,24 @@
 
 ---
 
+## Milestone S — 2026-10-16 (tooling audit + minimal skills; observed vs assumed)
+
+- **Observed (from artifacts/CODE):** pilot used piper/piper-tts 1.8.0 voice
+  `en_US-lessac-medium` (84.975 s measured), segment-level subtitles (16 cues,
+  burned), `render_runtime: ffmpeg` 6.1.1 (d-002; remotion unavailable),
+  `direct_clip_search` over Wikimedia Commons (6 CC assets), music silence (d-003).
+- **Observed (licenses):** repo AGPL-3.0; voice CC-BY-4.0 exists ONLY as a manifest
+  assertion → UNKNOWN; engine/ffmpeg/weights → UNKNOWN from repo files.
+- **Observed (skills):** Kilo 7.8.12; project path `.kilo/skills/` per official Kilo
+  skills doc. Installed 7 skills (superpowers `bb92a77`, youtube-agent-skill
+  `a2feb21`, both MIT; every SKILL.md + script read, no network/secrets found).
+  `hookscore.py`/`title.py`/`chapters.py` verified (`py_compile` exit 0 + live runs
+  observed). yt-chapters needed vendored `deadair.py` + 4-line import fallback.
+- **Assumed (not verified):** Kilo auto-discovery of `.kilo/skills/` in this layout
+  (no Kilo session run); voice-license validity for commercial use.
+
+---
+
 ## Milestone A — 2026-10-16 (docs only; observed vs assumed)
 
 - **Observed (from CODE):** 16 registered stock adapters in `tools/video/stock_sources/`

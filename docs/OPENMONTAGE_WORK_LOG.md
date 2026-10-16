@@ -2,6 +2,28 @@
 
 ---
 
+### 2026-10-16 — Milestone S: tooling audit + minimal skill install
+- **Goal:** audit pilot tooling from artifacts + install 7 pinned skills; no paid
+  routes, model downloads, or process/lock changes.
+- **Observed:** narration_manifest (piper 1.8.0, lessac-medium), render_report
+  (ffmpeg 6.1.1, d-002/d-003), asset_manifest (direct_clip_search, 6 CC assets);
+  repo LICENSE = AGPL-3.0; voice/engine/ffmpeg/weights licenses UNKNOWN from repo files.
+  Kilo 7.8.12; `.kilo/skills/` path per official Kilo skills doc. Pins verified:
+  superpowers `bb92a77`, youtube-agent-skill `a2feb21` (both MIT, `ls-remote` == clone HEAD).
+  Tools verified live: `py_compile` exit 0 (3 files), hookscore scored a test hook,
+  chapters.py produced 3 valid chapters from a /tmp SRT (exit 0).
+- **Files changed:** `docs/openmontage/TOOLING_DECISIONS.md` (new),
+  `.kilo/skills/{test-driven-development,systematic-debugging,
+  verification-before-completion,yt-script,yt-package,yt-chapters,yt-seo}/` (new),
+  `docs/OPENMONTAGE_RESUME.md`, `docs/OPENMONTAGE_WORK_LOG.md` (this entry).
+  Upstream `hooks/`/`index.js` NOT installed; no paid-API or YT-download skills.
+- **Tests actually run:** none (skill smoke runs above are tool executions, not test suites).
+- **Git status / user changes preserved:** tree was clean at start (ahead 1 from
+  milestone B only); no destructive commands.
+- **Next smallest step:** confirm Kilo discovers `.kilo/skills/` in a live session.
+
+---
+
 ### 2026-10-16 — Milestone A: niche reality check + profile spec (docs only)
 - **Goal:** reality check from CODE + niche profile spec; no code/installs/runs/lock changes.
 - **Observed (from CODE):** 16 stock adapters (`tools/video/stock_sources/`): keyless/optional-key =
