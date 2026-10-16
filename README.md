@@ -57,8 +57,8 @@
 
 <table>
 <tr>
-<td width="180" align="center"><a href="https://bloome.im/app?ref=calesthio&utm_medium=github&utm_source=calesthio-OpenMontage-ivor-202607"><img src="assets/sponsors/bloome.png" alt="Bloome" width="150"></a></td>
-<td><strong>Bloome</strong> lets multiple AI agents (Claude, ChatGPT, DeepSeek, and more) collaborate in one conversation for agentic video pipelines. It has zero setup, runs in the cloud, works on web and mobile, and lets you share a configured agent with your whole team. <strong><a href="https://bloome.im/app?ref=calesthio&utm_medium=github&utm_source=calesthio-OpenMontage-ivor-202607">Try Bloome</a></strong>.</td>
+<td width="180" align="center"><a href="https://renoise.ai/?utm_medium=github&utm_source=calesthio-openmontage-ivor-202610"><img src="assets/sponsors/renoise.png" alt="Renoise" width="150"></a></td>
+<td><strong>Renoise</strong> pairs an AI agent with a canvas for video creation. Describe your idea in plain language and the agent writes the prompts, plans the shots, and keeps characters consistent across them, then you fine-tune everything on the canvas. 29 top models (Seedance, Kling, GPT Image), plus official Claude Code and ChatGPT plugins. <strong><a href="https://renoise.ai/?utm_medium=github&utm_source=calesthio-openmontage-ivor-202610">Try Renoise</a></strong>.</td>
 </tr>
 <tr>
 <td width="180" align="center"><a href="https://www.atlascloud.ai/coding-plan"><img src="assets/sponsors/atlas-cloud.png" alt="Atlas Cloud" width="150"></a></td>
